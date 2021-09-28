@@ -17,6 +17,7 @@
     "MixinItemInHandRenderer",
     "MixinLevelRenderer",
     "MixinLivingEntityRenderer",
+    "MixinMinecraft",
     "MixinModelViewBobbing",
     "MixinBufferSource_WrapperChecking",
     "MixinParticleEngine",

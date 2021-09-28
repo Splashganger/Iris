@@ -57,12 +57,12 @@ public class IrisConfig {
 	 */
 	private int scrollSpeed = 100;
 
-	private Path propertiesPath;
+	private final Path propertiesPath;
 
-	public IrisConfig() {
+	public IrisConfig(Path propertiesPath) {
 		shaderPackName = null;
-		enableShaders = false;
-		propertiesPath = FabricLoader.getInstance().getConfigDir().resolve("iris.properties");
+		enableShaders = true;
+		this.propertiesPath = propertiesPath;
 	}
 
 	/**
