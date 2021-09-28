@@ -1,9 +1,9 @@
 package net.coderbot.iris.gui.property;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 public abstract class TupleProperty extends Property {
-    public TupleProperty(Text label) {
+    public TupleProperty(Component label) {
         super(label);
     }
 

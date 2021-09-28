@@ -7,7 +7,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.minecraft.util.Util;
+import net.minecraft.Util;
 
 import static net.coderbot.iris.shaderpack.DefineOptionParser.*;
 

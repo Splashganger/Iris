@@ -8,11 +8,11 @@ import net.coderbot.iris.gui.UiTheme;
 import net.coderbot.iris.gui.element.PropertyDocumentWidget;
 import net.coderbot.iris.gui.property.*;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Formatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.ChatFormatting;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -237,18 +237,18 @@ public class IrisConfig {
 	 *
 	 * @return pages for the config screen as a String to PropertyList map
 	 */
-	public Map<String, PropertyList> createDocument(TextRenderer tr, Screen parent, PropertyDocumentWidget widget, int width) {
+	public Map<String, PropertyList> createDocument(Font font, Screen parent, PropertyDocumentWidget widget, int width) {
 		Map<String, PropertyList> document = new HashMap<>();
 		PropertyList page = new PropertyList();
-		page.add(new TitleProperty(new TranslatableText("property.iris.title.configScreen").formatted(Formatting.BOLD),
+		page.add(new TitleProperty(new TranslatableComponent("property.iris.title.configScreen").withStyle(ChatFormatting.BOLD),
 				0x82ffffff, 0x82ff0000, 0x82ff8800, 0x82ffd800, 0x8288ff00, 0x8200d8ff, 0x823048ff, 0x829900ff, 0x82ffffff
 		));
-		page.add(new FunctionalButtonProperty(widget, () -> MinecraftClient.getInstance().openScreen(new ShaderPackScreen(parent)), new TranslatableText("options.iris.shaderPackSelection.title"), LinkProperty.Align.CENTER_LEFT));
+		page.add(new FunctionalButtonProperty(widget, () -> Minecraft.getInstance().setScreen(new ShaderPackScreen(parent)), new TranslatableComponent("options.iris.shaderPackSelection.title"), LinkProperty.Align.CENTER_LEFT));
 		int textWidth = (int)(width * 0.6) - 18;
 		page.addAll(ImmutableList.of(
-				new StringOptionProperty(ImmutableList.of(UiTheme.IRIS.name(), UiTheme.VANILLA.name(), UiTheme.AQUA.name()), 0, widget, "uiTheme", GuiUtil.trimmed(tr, "property.iris.uiTheme", textWidth, true, true), false, false),
-				new BooleanOptionProperty(widget, true, "condenseShaderConfig", GuiUtil.trimmed(tr, "property.iris.condenseShaderConfig", textWidth, true, true), false),
-				new IntOptionProperty(IntStream.rangeClosed(0, 200).boxed().collect(Collectors.toList()), 100, widget, "scrollSpeed", GuiUtil.trimmed(tr, "property.iris.scrollSpeed", textWidth, true, true), true)
+				new StringOptionProperty(ImmutableList.of(UiTheme.IRIS.name(), UiTheme.VANILLA.name(), UiTheme.AQUA.name()), 0, widget, "uiTheme", GuiUtil.trimmed(font, "property.iris.uiTheme", textWidth, true, true), false, false),
+				new BooleanOptionProperty(widget, true, "condenseShaderConfig", GuiUtil.trimmed(font, "property.iris.condenseShaderConfig", textWidth, true, true), false),
+				new IntOptionProperty(IntStream.rangeClosed(0, 200).boxed().collect(Collectors.toList()), 100, widget, "scrollSpeed", GuiUtil.trimmed(font, "property.iris.scrollSpeed", textWidth, true, true), true)
 		));
 		document.put("main", page);
 		widget.onSave(() -> {

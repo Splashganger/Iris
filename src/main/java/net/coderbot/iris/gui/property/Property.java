@@ -1,10 +1,10 @@
 package net.coderbot.iris.gui.property;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 
 /**
  * An element of a document. Used for options
@@ -14,14 +14,14 @@ import net.minecraft.text.Text;
  * in a GUI.
  */
 public class Property {
-    protected final Text label;
+    protected final Component label;
 
     /**
      * A completely empty property. When used in the
      * shader pack config document, EMPTYs can be
      * hidden by enabling condensed view.
      */
-    public static final Property EMPTY = new Property(LiteralText.EMPTY);
+    public static final Property EMPTY = new Property(TextComponent.EMPTY);
 
     /**
      * The only difference between this and
@@ -29,9 +29,9 @@ public class Property {
      * won't be included if EMPTY is ever
      * searched for.
      */
-    public static final Property PLACEHOLDER = new Property(LiteralText.EMPTY);
+    public static final Property PLACEHOLDER = new Property(TextComponent.EMPTY);
 
-    public Property(Text label) {
+    public Property(Component label) {
         this.label = label;
     }
 
@@ -43,17 +43,17 @@ public class Property {
         return false;
     }
 
-    public void render(MatrixStack matrices, int x, int y, int width, int height, int mouseX, int mouseY, boolean isHovered, float delta) {
-        this.drawText(MinecraftClient.getInstance(), label, matrices, x + 10, y + (height / 2), 0xFFFFFF, false, true, true);
+    public void render(PoseStack poseStack, int x, int y, int width, int height, int mouseX, int mouseY, boolean isHovered, float delta) {
+        this.drawText(Minecraft.getInstance(), label, poseStack, x + 10, y + (height / 2), 0xFFFFFF, false, true, true);
     }
 
     public boolean charTyped(char c, int keyCode) {
         return false;
     }
 
-    protected final void drawText(MinecraftClient client, Text text, MatrixStack matrices, int x, int y, int color, boolean centerX, boolean centerY, boolean shadow) {
-        TextRenderer t = client.textRenderer;
-        if(shadow) t.drawWithShadow(matrices, text, centerX ? x - (int)((float)t.getWidth(text) / 2) : x, centerY ? y - 4 : y, color);
-        else t.draw(matrices, text, centerX ? x - (int)((float)t.getWidth(text) / 2) : x, centerY ? y - 4 : y, color);
+    protected final void drawText(Minecraft minecraft, Component text, PoseStack poseStack, int x, int y, int color, boolean centerX, boolean centerY, boolean shadow) {
+        Font font = minecraft.font;
+        if (shadow) font.drawShadow(poseStack, text, centerX ? x - (int)((float) font.width(text) / 2) : x, centerY ? y - 4 : y, color);
+        else font.draw(poseStack, text, centerX ? x - (int)((float) font.width(text) / 2) : x, centerY ? y - 4 : y, color);
     }
 }

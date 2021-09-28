@@ -2,15 +2,15 @@ package net.coderbot.iris.gui.property;
 
 import net.coderbot.iris.gui.GuiUtil;
 import net.coderbot.iris.gui.element.PropertyDocumentWidget;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.resource.language.I18n;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.network.chat.Component;
+import net.minecraft.ChatFormatting;
 
 import java.util.List;
 
 public class IntOptionProperty extends OptionProperty<Integer> {
-    public IntOptionProperty(List<Integer> values, int defaultIndex, PropertyDocumentWidget document, String key, Text label, boolean isSlider) {
+    public IntOptionProperty(List<Integer> values, int defaultIndex, PropertyDocumentWidget document, String key, Component label, boolean isSlider) {
         super(values, defaultIndex, document, key, label, isSlider);
     }
 
@@ -20,10 +20,10 @@ public class IntOptionProperty extends OptionProperty<Integer> {
 	}
 
 	@Override
-    public Text createValueText(int width) {
+    public Component createValueText(int width) {
     	String translation = "value." + key + "." + this.getValue();
-    	boolean hasTranslation = I18n.hasTranslation(translation);
-        return GuiUtil.trimmed(MinecraftClient.getInstance().textRenderer, hasTranslation ? translation : Integer.toString(this.getValue()), width, hasTranslation, true, isDefault() ? Formatting.RESET : Formatting.YELLOW);
+    	boolean hasTranslation = I18n.exists(translation);
+        return GuiUtil.trimmed(Minecraft.getInstance().font, hasTranslation ? translation : Integer.toString(this.getValue()), width, hasTranslation, true, isDefault() ? ChatFormatting.RESET : ChatFormatting.YELLOW);
     }
 
     @Override

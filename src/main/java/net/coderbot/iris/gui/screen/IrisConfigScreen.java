@@ -1,16 +1,16 @@
 package net.coderbot.iris.gui.screen;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.config.IrisConfig;
 import net.coderbot.iris.gui.GuiUtil;
 import net.coderbot.iris.gui.ScreenStack;
 import net.coderbot.iris.gui.element.PropertyDocumentWidget;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ScreenTexts;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.TextComponent;
+import net.minecraft.network.chat.TranslatableComponent;
 
 public class IrisConfigScreen extends Screen implements HudHideable {
     protected final IrisConfig config = Iris.getIrisConfig();
@@ -19,7 +19,7 @@ public class IrisConfigScreen extends Screen implements HudHideable {
     private final Screen parent;
 
 	public IrisConfigScreen(Screen parent) {
-        super(new LiteralText(""));
+        super(new TextComponent(""));
         this.parent = parent;
     }
 
@@ -27,7 +27,7 @@ public class IrisConfigScreen extends Screen implements HudHideable {
     protected void init() {
         super.init();
         int bottomCenter = this.width / 2 - 50;
-        boolean inWorld = this.client.world != null;
+        boolean inWorld = this.minecraft.level != null;
 
         float scrollAmount = 0.0f;
         String page = "main";
@@ -37,18 +37,18 @@ public class IrisConfigScreen extends Screen implements HudHideable {
             page = this.configProperties.getCurrentPage();
         }
 
-        this.configProperties  = new PropertyDocumentWidget(client, width, height, 20, this.height - 34, 0, this.width, 26, width - 39);
-        if (inWorld) this.configProperties.method_31322(false);
-        this.configProperties.setDocument(this.config.createDocument(this.client.textRenderer, this, this.configProperties, 320), "main");
+        this.configProperties  = new PropertyDocumentWidget(minecraft, width, height, 20, this.height - 34, 0, this.width, 26, width - 39);
+        if (inWorld) this.configProperties.setRenderBackground(false);
+        this.configProperties.setDocument(this.config.createDocument(this.minecraft.font, this, this.configProperties, 320), "main");
 
         this.configProperties.setScrollAmount(this.configProperties.getMaxScroll() * scrollAmount);
         this.configProperties.goTo(page);
 
         this.children.add(configProperties);
 
-        this.addButton(new ButtonWidget(bottomCenter + 104, this.height - 27, 100, 20, ScreenTexts.DONE, button -> { this.saveConfig(); onClose(); }));
-        this.addButton(new ButtonWidget(bottomCenter, this.height - 27, 100, 20, new TranslatableText("options.iris.apply"), button -> this.saveConfig()));
-        this.addButton(new ButtonWidget(bottomCenter - 104, this.height - 27, 100, 20, new TranslatableText("options.iris.refresh"), button -> this.loadConfig()));
+        this.addButton(new Button(bottomCenter + 104, this.height - 27, 100, 20, CommonComponents.GUI_DONE, button -> { this.saveConfig(); onClose(); }));
+        this.addButton(new Button(bottomCenter, this.height - 27, 100, 20, new TranslatableComponent("options.iris.apply"), button -> this.saveConfig()));
+        this.addButton(new Button(bottomCenter - 104, this.height - 27, 100, 20, new TranslatableComponent("options.iris.refresh"), button -> this.loadConfig()));
 
         loadConfig();
 
@@ -58,20 +58,20 @@ public class IrisConfigScreen extends Screen implements HudHideable {
     }
 
     @Override
-    public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-        if (this.client.world == null) this.renderBackground(matrices);
-        else this.fillGradient(matrices, 0, 0, width, height, 0x4F232323, 0x4F232323);
-        this.configProperties.render(matrices, mouseX, mouseY, delta);
+    public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+        if (this.minecraft.level == null) this.renderBackground(poseStack);
+        else this.fillGradient(poseStack, 0, 0, width, height, 0x4F232323, 0x4F232323);
+        this.configProperties.render(poseStack, mouseX, mouseY, delta);
 
-        GuiUtil.drawDirtTexture(client, 0, 0, -100, width, 20);
-        GuiUtil.drawDirtTexture(client, 0, this.height - 34, -100, width, 34);
-        super.render(matrices, mouseX, mouseY, delta);
+        GuiUtil.drawDirtTexture(minecraft, 0, 0, -100, width, 20);
+        GuiUtil.drawDirtTexture(minecraft, 0, this.height - 34, -100, width, 34);
+        super.render(poseStack, mouseX, mouseY, delta);
     }
 
     @Override
     public void onClose() {
 		ScreenStack.pull(this.getClass());
-		client.openScreen(ScreenStack.pop());
+		minecraft.setScreen(ScreenStack.pop());
 	}
 
     private void loadConfig() {
