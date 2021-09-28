@@ -37,12 +37,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ShaderPackScreen extends Screen implements HudHideable {
+	private static final Component SELECT_TITLE = new TranslatableComponent("pack.iris.select.title").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC);
+	private static final Component CONFIGURE_TITLE = new TranslatableComponent("pack.iris.configure.title").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC);
+
 	private final Screen parent;
 
 	private ShaderPackSelectionList shaderPackList;
 	private PropertyDocumentWidget shaderProperties;
-
-	private static final Component SELECT_TITLE = new TranslatableComponent("pack.iris.select.title").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC);
 
 	private Component addedPackDialog = null;
 	private int addedPackDialogTimer = 0;
@@ -73,8 +74,8 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 		if (addedPackDialog != null && addedPackDialogTimer > 0) {
 			drawCenteredString(poseStack, this.font, addedPackDialog, (int) (this.width * 0.5), 21, 0xFFFFFF);
 		} else {
-			drawCenteredString(poseStack, this.font, new TranslatableComponent("pack.iris.select.title").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC), (int) (this.width * 0.25), 21, 16777215);
-			drawCenteredString(poseStack, this.font, new TranslatableComponent("pack.iris.configure.title").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC), (int) (this.width * 0.75), 21, 16777215);
+			drawCenteredString(poseStack, this.font, SELECT_TITLE, (int) (this.width * 0.25), 21, 16777215);
+			drawCenteredString(poseStack, this.font, CONFIGURE_TITLE, (int) (this.width * 0.75), 21, 16777215);
 		}
 
 		super.render(poseStack, mouseX, mouseY, delta);
@@ -177,14 +178,14 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 				String fileName = paths.get(0).getFileName().toString();
 
 				this.addedPackDialog = new TranslatableComponent(
-						"options.iris.shaderPackSelection.failedAddSingle",
-						fileName
+					"options.iris.shaderPackSelection.failedAddSingle",
+					fileName
 				).withStyle(ChatFormatting.ITALIC, ChatFormatting.RED);
 			} else {
 				// Otherwise, show a generic message.
 
 				this.addedPackDialog = new TranslatableComponent(
-						"options.iris.shaderPackSelection.failedAdd"
+					"options.iris.shaderPackSelection.failedAdd"
 				).withStyle(ChatFormatting.ITALIC, ChatFormatting.RED);
 			}
 
@@ -253,7 +254,7 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 		}
 
 		ScreenStack.pull(this.getClass());
-		minecraft.setScreen(ScreenStack.pop());
+		this.minecraft.setScreen(ScreenStack.pop());
 	}
 
 	private void dropChangesAndClose() {
