@@ -21,7 +21,7 @@ public class LinkProperty extends Property {
 
     @Override
     public boolean onClicked(double mouseX, double mouseY, int button) {
-        if(button == 0) {
+        if (button == 0) {
             GuiUtil.playButtonClickSound();
             this.document.goTo(page);
             return true;
@@ -38,8 +38,8 @@ public class LinkProperty extends Property {
         Minecraft mc = Minecraft.getInstance();
         int tx;
         int w = mc.font.width(this.label);
-        if(this.align.center) tx = (x + (width/2)) - (w / 2) - 2;
-        else if(this.align.left) tx = x + 10;
+        if (this.align.center) tx = (x + (width/2)) - (w / 2) - 2;
+        else if (this.align.left) tx = x + 10;
         else tx = x + width - 10 - w;
         this.drawText(mc, label, poseStack, tx, y + (height / 2), 0xFFFFFF, false, true, true);
         this.drawText(mc, new TextComponent(this.align.left ? ">" : "<"), poseStack, this.align.left ? x + width - 19 : x + 11, y + (height / 2), 0xFFFFFF, false, true, true);

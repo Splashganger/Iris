@@ -73,7 +73,7 @@ public abstract class OptionProperty<T> extends ValueProperty<T> {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if(isSlider && isButtonHovered(mouseX, true)) {
+        if (isSlider && isButtonHovered(mouseX, true)) {
             float pos = (float)((mouseX - (cachedX + (cachedWidth * 0.6) - 7)) / ((cachedWidth * 0.4)));
             this.index = Math.min((int)(pos * this.values.size()), this.values.size() - 1);
             this.valueText = null;

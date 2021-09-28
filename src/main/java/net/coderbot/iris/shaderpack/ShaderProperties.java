@@ -208,7 +208,7 @@ public class ShaderProperties {
 		}
 
 		private void set(Properties properties) {
-			for(String s : properties.stringPropertyNames()) {
+			for (String s : properties.stringPropertyNames()) {
 				super.put(s, properties.getProperty(s));
 			}
 		}
