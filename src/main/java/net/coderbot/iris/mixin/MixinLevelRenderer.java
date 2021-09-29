@@ -62,7 +62,7 @@ public class MixinLevelRenderer {
 
 		CapturedRenderingState.INSTANCE.setGbufferModelView(poseStack.last().pose());
 		CapturedRenderingState.INSTANCE.setTickDelta(tickDelta);
-		if(previousViewDistance != minecraft.options.renderDistance) {
+		if (previousViewDistance != minecraft.options.renderDistance) {
 			horizonRenderer.close();
 			horizonRenderer = new HorizonRenderer();
 			previousViewDistance = minecraft.options.renderDistance;

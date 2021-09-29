@@ -22,7 +22,7 @@ public class MixinLightTexture {
 		return TextureUnit.LIGHTMAP.getUnitId();
 	}
 
-	@ModifyConstant(method = "enable()V", constant = @Constant(intValue = GL15.GL_TEXTURE2), require = 1)
+	@ModifyConstant(method = "turnOnLightLayer", constant = @Constant(intValue = GL15.GL_TEXTURE2), require = 1)
 	private int iris$fixLightmapTextureUnit$enable(int texUnit) {
 		return TextureUnit.LIGHTMAP.getUnitId();
 	}*/

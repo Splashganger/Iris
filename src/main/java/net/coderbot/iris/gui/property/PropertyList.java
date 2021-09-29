@@ -20,7 +20,7 @@ public class PropertyList extends ArrayList<Property> {
      * @param properties The Properties to add
      */
     public void addAllPairs(List<? extends Property> properties) {
-        for(int i = 0; i < properties.size(); i += 2) {
+        for (int i = 0; i < properties.size(); i += 2) {
             Property left = properties.get(i);
             Property right = i + 1 < properties.size() ? properties.get(i + 1) : Property.EMPTY;
             this.add(new PairProperty(left, right));
@@ -37,8 +37,8 @@ public class PropertyList extends ArrayList<Property> {
      */
     public void forEvery(Consumer<? super Property> action) {
         this.forEach(p -> {
-            if(p instanceof TupleProperty) {
-                for(Property contained : ((TupleProperty)p).getContainedProperties()) {
+            if (p instanceof TupleProperty) {
+                for (Property contained : ((TupleProperty)p).getContainedProperties()) {
                     action.accept(contained);
                 }
             } else action.accept(p);

@@ -21,7 +21,7 @@ public class LinkProperty extends Property {
 
     @Override
     public boolean onClicked(double mouseX, double mouseY, int button) {
-        if(button == 0) {
+        if (button == 0) {
             GuiUtil.playButtonClickSound();
             this.document.goTo(page);
             return true;

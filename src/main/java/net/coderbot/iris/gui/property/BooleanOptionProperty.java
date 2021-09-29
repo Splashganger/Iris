@@ -20,7 +20,7 @@ public class BooleanOptionProperty extends OptionProperty<Boolean> {
     @Override
     public void setValue(String value) {
         this.valueText = null;
-        if(value.equals("true") || value.equals("false")) {
+        if (value.equals("true") || value.equals("false")) {
             this.setValue(Boolean.parseBoolean(value));
             return;
         }

@@ -120,7 +120,7 @@ public class MixinGameRenderer {
 			"getParticleShader"
 	}, at = @At("HEAD"), cancellable = true)
 	private static void iris$overrideParticleShader(CallbackInfoReturnable<ShaderInstance> cir) {
-		if(isPhase(WorldRenderingPhase.WEATHER)) {
+		if (isPhase(WorldRenderingPhase.WEATHER)) {
 			override(CoreWorldRenderingPipeline::getWeather, cir);
 		} else if (isRenderingWorld() && !ShadowRenderer.ACTIVE) {
 			override(CoreWorldRenderingPipeline::getParticles, cir);
@@ -221,7 +221,7 @@ public class MixinGameRenderer {
 			"getRendertypeArmorEntityGlintShader"
 	}, at = @At("HEAD"), cancellable = true)
 	private static void iris$overrideGlintShader(CallbackInfoReturnable<ShaderInstance> cir) {
-		if(isRenderingWorld()) {
+		if (isRenderingWorld()) {
 			override(CoreWorldRenderingPipeline::getGlint, cir);
 		}
 	}
@@ -323,7 +323,7 @@ public class MixinGameRenderer {
 			"getRendertypeEndPortalShader"
 	}, at = @At("HEAD"), cancellable = true)
 	private static void iris$overrideEndPortalShader(CallbackInfoReturnable<ShaderInstance> cir) {
-		if(!ShadowRenderer.ACTIVE) {
+		if (!ShadowRenderer.ACTIVE) {
 			override(CoreWorldRenderingPipeline::getBlock, cir);
 		}
 	}

@@ -38,14 +38,14 @@ public abstract class OptionProperty<T> extends ValueProperty<T> {
 
     @Override
     public T getValue() {
-    	if(values.size() == 0) return fallbackValue();
+    	if (values.size() == 0) return fallbackValue();
     	index = Math.max(0, Math.min(index, values.size() - 1));
         return values.get(index);
     }
 
     @Override
     public void setValue(T value) {
-        if(values.contains(value)) {
+        if (values.contains(value)) {
             this.index = values.indexOf(value);
         } else {
             Iris.logger.warn("Unable to set value of {} to {} - Invalid value!", key, value);

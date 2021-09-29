@@ -22,7 +22,7 @@ public class TitleProperty extends Property {
         this.drawText(Minecraft.getInstance(), label, poseStack, x + (width / 2), y + (height / 2), 0xFFFFFF, true, true, true);
         float sectionWid = (float)(width - 8) / underlineColors.length;
         int drawn = 0;
-        for(int i = 0; i < underlineColors.length; i++) {
+        for (int i = 0; i < underlineColors.length; i++) {
             int w = (int)(sectionWid * (i + 1)) - drawn;
             GuiUtil.fill(x + 2 + drawn, y + height, w, 1, underlineColors[i]);
             drawn += w;

@@ -116,7 +116,7 @@ public final class GuiUtil {
 	 * Plays the {@code UI_BUTTON_CLICK} sound event as a
 	 * master sound effect.
 	 *
-	 * Used in non-{@code ButtonWidget} UI elements upon click
+	 * Used in non-{@code Button} UI elements upon click
 	 * or other action.
 	 */
 	public static void playButtonClickSound() {

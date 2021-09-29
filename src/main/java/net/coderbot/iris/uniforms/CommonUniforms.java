@@ -32,6 +32,9 @@ import net.minecraft.world.phys.Vec3;
 
 import static net.coderbot.iris.gl.uniform.UniformUpdateFrequency.PER_FRAME;
 import static net.coderbot.iris.gl.uniform.UniformUpdateFrequency.PER_TICK;
+
+import com.mojang.math.Vector4f;
+
 import static net.coderbot.iris.gl.uniform.UniformUpdateFrequency.ONCE;
 
 public final class CommonUniforms {
@@ -49,6 +52,7 @@ public final class CommonUniforms {
 		SystemTimeUniforms.addSystemTimeUniforms(uniforms);
 		new CelestialUniforms(directives.getSunPathRotation()).addCelestialUniforms(uniforms);
 		IdMapUniforms.addIdMapUniforms(uniforms, idMap);
+		IrisExclusiveUniforms.addIrisExclusiveUniforms(uniforms);
 		MatrixUniforms.addMatrixUniforms(uniforms, directives);
 		HardcodedCustomUniforms.addHardcodedCustomUniforms(uniforms, updateNotifier);
 		FogUniforms.addFogUniforms(uniforms, fogMode);
