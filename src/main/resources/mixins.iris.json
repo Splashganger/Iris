@@ -15,6 +15,7 @@
     "MixinGameRenderer",
     "MixinGlStateManager",
     "MixinItemInHandRenderer",
+    "MixinGlStateManager_AtlasTracking",
     "MixinLevelRenderer",
     "MixinLivingEntityRenderer",
     "MixinMinecraft",
