@@ -1,18 +1,18 @@
 package net.coderbot.iris.gui.property;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.coderbot.iris.gui.GuiUtil;
 import net.coderbot.iris.gui.element.PropertyDocumentWidget;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextComponent;
 
 public class LinkProperty extends Property {
     protected final PropertyDocumentWidget document;
     protected final String page;
     protected final Align align;
 
-    public LinkProperty(PropertyDocumentWidget document, String pageName, Text label, Align align) {
+    public LinkProperty(PropertyDocumentWidget document, String pageName, Component label, Align align) {
         super(label);
         this.document = document;
         this.page = pageName;
@@ -21,7 +21,7 @@ public class LinkProperty extends Property {
 
     @Override
     public boolean onClicked(double mouseX, double mouseY, int button) {
-        if(button == 0) {
+        if (button == 0) {
             GuiUtil.playButtonClickSound();
             this.document.goTo(page);
             return true;
@@ -30,19 +30,19 @@ public class LinkProperty extends Property {
     }
 
     @Override
-    public void render(MatrixStack matrices, int x, int y, int width, int height, int mouseX, int mouseY, boolean isHovered, float delta) {
+    public void render(PoseStack poseStack, int x, int y, int width, int height, int mouseX, int mouseY, boolean isHovered, float delta) {
         int bx = x + 4;
         int bw = width - 12;
 
-        GuiUtil.drawButton(matrices, bx, y, bw, height, isHovered, false, true);
-        MinecraftClient mc = MinecraftClient.getInstance();
+        GuiUtil.drawButton(poseStack, bx, y, bw, height, isHovered, false, true);
+        Minecraft mc = Minecraft.getInstance();
         int tx;
-        int w = mc.textRenderer.getWidth(this.label);
-        if(this.align.center) tx = (x + (width/2)) - (w / 2) - 2;
-        else if(this.align.left) tx = x + 10;
+        int w = mc.font.width(this.label);
+        if (this.align.center) tx = (x + (width/2)) - (w / 2) - 2;
+        else if (this.align.left) tx = x + 10;
         else tx = x + width - 10 - w;
-        this.drawText(mc, label, matrices, tx, y + (height / 2), 0xFFFFFF, false, true, true);
-        this.drawText(mc, new LiteralText(this.align.left ? ">" : "<"), matrices, this.align.left ? x + width - 19 : x + 11, y + (height / 2), 0xFFFFFF, false, true, true);
+        this.drawText(mc, label, poseStack, tx, y + (height / 2), 0xFFFFFF, false, true, true);
+        this.drawText(mc, new TextComponent(this.align.left ? ">" : "<"), poseStack, this.align.left ? x + width - 19 : x + 11, y + (height / 2), 0xFFFFFF, false, true, true);
     }
 
     public enum Align {

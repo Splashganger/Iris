@@ -1,13 +1,13 @@
 package net.coderbot.iris.shaderpack;
 
+import net.minecraft.Util;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import net.minecraft.util.Util;
 
 import static net.coderbot.iris.shaderpack.DefineOptionParser.*;
 

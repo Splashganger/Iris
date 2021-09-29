@@ -6,6 +6,7 @@ import java.util.function.IntFunction;
 import java.util.function.Supplier;
 
 import com.google.common.collect.ImmutableSet;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.coderbot.iris.Iris;
@@ -16,7 +17,7 @@ import net.coderbot.iris.gl.program.Program;
 import net.coderbot.iris.gl.program.ProgramBuilder;
 import net.coderbot.iris.gl.program.ProgramSamplers;
 import net.coderbot.iris.layer.GbufferProgram;
-import net.coderbot.iris.mixin.WorldRendererAccessor;
+import net.coderbot.iris.mixin.LevelRendererAccessor;
 import net.coderbot.iris.postprocess.BufferFlipper;
 import net.coderbot.iris.postprocess.CenterDepthSampler;
 import net.coderbot.iris.postprocess.CompositeRenderer;
@@ -33,20 +34,17 @@ import net.coderbot.iris.shadows.EmptyShadowMapRenderer;
 import net.coderbot.iris.shadows.ShadowMapRenderer;
 import net.coderbot.iris.uniforms.CommonUniforms;
 import net.coderbot.iris.uniforms.FrameUpdateNotifier;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.texture.AbstractTexture;
-import org.apache.logging.log4j.Level;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.particle.ParticleRenderType;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.opengl.GL15C;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL20C;
-
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.Framebuffer;
-import net.minecraft.client.particle.ParticleTextureSheet;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.Registry;
 import org.lwjgl.opengl.GL30C;
 
 /**
@@ -121,7 +119,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 	private final List<GbufferProgram> programStack = new ArrayList<>();
 	private final List<String> programStackLog = new ArrayList<>();
 
-	private static final Identifier WATER_IDENTIFIER = new Identifier("minecraft", "water");
+	private static final ResourceLocation WATER_IDENTIFIER = new ResourceLocation("minecraft", "water");
 
 	public DeferredWorldRenderingPipeline(ProgramSet programs) {
 		Objects.requireNonNull(programs);
@@ -132,8 +130,8 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 
 		this.allPasses = new ArrayList<>();
 
-		this.renderTargets = new RenderTargets(MinecraftClient.getInstance().getFramebuffer(), programs.getPackDirectives().getRenderTargetDirectives());
-		this.waterId = programs.getPack().getIdMap().getBlockProperties().getOrDefault(Registry.BLOCK.get(WATER_IDENTIFIER).getDefaultState(), -1);
+		this.renderTargets = new RenderTargets(Minecraft.getInstance().getMainRenderTarget(), programs.getPackDirectives().getRenderTargetDirectives());
+		this.waterId = programs.getPack().getIdMap().getBlockProperties().getOrDefault(Registry.BLOCK.get(WATER_IDENTIFIER).defaultBlockState(), -1);
 		this.sunPathRotation = programs.getPackDirectives().getSunPathRotation();
 
 		PackShadowDirectives shadowDirectives = programs.getPackDirectives().getShadowDirectives();
@@ -217,7 +215,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 			ProgramSamplers.Builder builder = ProgramSamplers.builder(programId, IrisSamplers.WORLD_RESERVED_TEXTURE_UNITS);
 
 			IrisSamplers.addRenderTargetSamplers(builder, flipped, renderTargets, false);
-			IrisSamplers.addWorldSamplers(builder, normals, specular);
+			IrisSamplers.addLevelSamplers(builder, normals, specular);
 			IrisSamplers.addWorldDepthSamplers(builder, renderTargets);
 			IrisSamplers.addNoiseSampler(builder, noise);
 
@@ -233,7 +231,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 			ProgramSamplers.Builder builder = ProgramSamplers.builder(programId, IrisSamplers.WORLD_RESERVED_TEXTURE_UNITS);
 
 			IrisSamplers.addRenderTargetSamplers(builder, () -> flippedBeforeTerrain, renderTargets, false);
-			IrisSamplers.addWorldSamplers(builder, normals, specular);
+			IrisSamplers.addLevelSamplers(builder, normals, specular);
 			IrisSamplers.addNoiseSampler(builder, noise);
 
 			// Only initialize these samplers if the shadow map renderer exists.
@@ -282,7 +280,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 
 	private void checkWorld() {
 		// If we're not in a world, then obviously we cannot possibly be rendering a world.
-		if (MinecraftClient.getInstance().world == null) {
+		if (Minecraft.getInstance().level == null) {
 			isRenderingWorld = false;
 			programStackLog.clear();
 			programStack.clear();
@@ -410,7 +408,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 			// Sildur's Vibrant Shaders. Instead, it should be cleared to solid black like the other buffers. The
 			// horizon rendered by HorizonRenderer ensures that shaderpacks that don't override the sky rendering don't
 			// have issues, and this also gives shaderpacks more control over sky rendering in general.
-			MinecraftClient.getInstance().getFramebuffer().beginWrite(true);
+			Minecraft.getInstance().getMainRenderTarget().bindWrite(true);
 			Program.unbind();
 
 			return;
@@ -495,7 +493,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 				() -> isBeforeTranslucent ? flippedBeforeTranslucent : flippedAfterTranslucent;
 
 		IrisSamplers.addRenderTargetSamplers(builder, flipped, renderTargets, false);
-		IrisSamplers.addWorldSamplers(builder, normals, specular);
+		IrisSamplers.addLevelSamplers(builder, normals, specular);
 		IrisSamplers.addWorldDepthSamplers(builder, renderTargets);
 		IrisSamplers.addNoiseSampler(builder, noise);
 
@@ -588,7 +586,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		GlStateManager._glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, 0);
 		GlStateManager._glBindFramebuffer(GL30C.GL_FRAMEBUFFER, 0);
 
-		MinecraftClient.getInstance().getFramebuffer().beginWrite(false);
+		Minecraft.getInstance().getMainRenderTarget().bindWrite(false);
 
 		// Destroy our render targets
 		//
@@ -648,17 +646,17 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		// Make sure we're using texture unit 0 for this.
 		RenderSystem.activeTexture(GL15C.GL_TEXTURE0);
 
-		Framebuffer main = MinecraftClient.getInstance().getFramebuffer();
-		renderTargets.resizeIfNeeded(main.textureWidth, main.textureHeight);
+		RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
+		renderTargets.resizeIfNeeded(main.width, main.height);
 
 		clearMainBuffers.bind();
 		RenderSystem.clearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		RenderSystem.clear(GL11C.GL_COLOR_BUFFER_BIT | GL11C.GL_DEPTH_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
+		RenderSystem.clear(GL11C.GL_COLOR_BUFFER_BIT | GL11C.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
 
 		clearAltBuffers.bind();
 		// Not clearing the depth buffer since there's only one of those and it was already cleared
 		RenderSystem.clearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		RenderSystem.clear(GL11C.GL_COLOR_BUFFER_BIT, MinecraftClient.IS_SYSTEM_MAC);
+		RenderSystem.clear(GL11C.GL_COLOR_BUFFER_BIT, Minecraft.ON_OSX);
 	}
 
 	@Override
@@ -677,8 +675,8 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 
 		RenderSystem.enableBlend();
 
-		MinecraftClient.getInstance().gameRenderer.getLightmapTextureManager().enable();
-		MinecraftClient.getInstance().gameRenderer.getOverlayTexture().setupOverlayColor();
+		Minecraft.getInstance().gameRenderer.lightTexture().turnOnLightLayer();
+		Minecraft.getInstance().gameRenderer.overlayTexture().setupOverlayColor();
 
 		if (!programStack.isEmpty()) {
 			GbufferProgram toUse = programStack.get(programStack.size() - 1);
@@ -690,10 +688,10 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 		}
 	}
 
-	public static GbufferProgram getProgramForSheet(ParticleTextureSheet sheet) {
-		if (sheet == ParticleTextureSheet.PARTICLE_SHEET_OPAQUE || sheet == ParticleTextureSheet.TERRAIN_SHEET || sheet == ParticleTextureSheet.CUSTOM) {
+	public static GbufferProgram getProgramForSheet(ParticleRenderType sheet) {
+		if (sheet == ParticleRenderType.PARTICLE_SHEET_OPAQUE || sheet == ParticleRenderType.TERRAIN_SHEET || sheet == ParticleRenderType.CUSTOM) {
 			return GbufferProgram.TEXTURED_LIT;
-		} else if (sheet == ParticleTextureSheet.PARTICLE_SHEET_TRANSLUCENT) {
+		} else if (sheet == ParticleRenderType.PARTICLE_SHEET_TRANSLUCENT) {
 			// TODO: Should we be using some other pass? (gbuffers_water?)
 			return GbufferProgram.TEXTURED_LIT;
 		} else {
@@ -706,7 +704,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 	}
 
 	@Override
-	public void renderShadows(WorldRendererAccessor worldRenderer, Camera playerCamera) {
+	public void renderShadows(LevelRendererAccessor worldRenderer, Camera playerCamera) {
 		this.shadowMapRenderer.renderShadows(worldRenderer, playerCamera);
 	}
 
@@ -727,7 +725,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 	private boolean isRenderingWorld = false;
 
 	@Override
-	public void beginWorldRendering() {
+	public void beginLevelRendering() {
 		isRenderingWorld = true;
 		isBeforeTranslucent = true;
 
@@ -753,7 +751,7 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
 	}
 
 	@Override
-	public void finalizeWorldRendering() {
+	public void finalizeLevelRendering() {
 		checkWorld();
 
 		if (!isRenderingWorld) {

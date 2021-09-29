@@ -1,30 +1,32 @@
 package net.coderbot.iris.gui.screen;
 
 import com.google.common.base.Throwables;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.config.IrisConfig;
 import net.coderbot.iris.gui.GuiUtil;
 import net.coderbot.iris.gui.ScreenStack;
+import net.coderbot.iris.gui.element.IrisObjectSelectionList;
 import net.coderbot.iris.gui.element.PropertyDocumentWidget;
-import net.coderbot.iris.gui.element.ShaderPackListWidget;
-import net.coderbot.iris.gui.element.ShaderScreenEntryListWidget;
-import net.coderbot.iris.gui.property.*;
+import net.coderbot.iris.gui.element.ShaderPackSelectionList;
+import net.coderbot.iris.gui.property.BooleanOptionProperty;
+import net.coderbot.iris.gui.property.FloatOptionProperty;
+import net.coderbot.iris.gui.property.IntOptionProperty;
+import net.coderbot.iris.gui.property.OptionProperty;
+import net.coderbot.iris.gui.property.PropertyList;
+import net.coderbot.iris.gui.property.StringOptionProperty;
 import net.coderbot.iris.shaderpack.Option;
 import net.coderbot.iris.shaderpack.ShaderPack;
 import net.coderbot.iris.shaderpack.ShaderPackConfig;
 import net.coderbot.iris.shaderpack.ShaderProperties;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ScreenTexts;
-import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Util;
+import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TranslatableComponent;
 
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -32,51 +34,55 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ShaderPackScreen extends Screen implements HudHideable {
+	private static final Component SELECT_TITLE = new TranslatableComponent("pack.iris.select.title").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC);
+	private static final Component CONFIGURE_TITLE = new TranslatableComponent("pack.iris.configure.title").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC);
+
 	private final Screen parent;
 
-	private ShaderPackListWidget shaderPackList;
+	private ShaderPackSelectionList shaderPackList;
 	private PropertyDocumentWidget shaderProperties;
 
-	private Text addedPackDialog = null;
+	private Component addedPackDialog = null;
 	private int addedPackDialogTimer = 0;
 
 	private boolean dropChanges = false;
 
 	public ShaderPackScreen(Screen parent) {
-		super(new TranslatableText("options.iris.shaderPackSelection.title"));
+		super(new TranslatableComponent("options.iris.shaderPackSelection.title"));
 
 		this.parent = parent;
 	}
 
 	@Override
-	public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
-		if (this.client.world == null) {
-			this.renderBackground(matrices);
+	public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
+		if (this.minecraft.level == null) {
+			this.renderBackground(poseStack);
 		} else {
-			this.fillGradient(matrices, 0, 0, width, height, 0x4F232323, 0x4F232323);
+			this.fillGradient(poseStack, 0, 0, width, height, 0x4F232323, 0x4F232323);
 		}
 
-		this.shaderPackList.render(matrices, mouseX, mouseY, delta);
-		this.shaderProperties.render(matrices, mouseX, mouseY, delta);
+		this.shaderPackList.render(poseStack, mouseX, mouseY, delta);
+		this.shaderProperties.render(poseStack, mouseX, mouseY, delta);
 
-		GuiUtil.drawDirtTexture(client, 0, 0, -100, width, 32);
-		GuiUtil.drawDirtTexture(client, 0, this.height - 58, -100, width, 58);
-		drawCenteredText(matrices, this.textRenderer, this.title, this.width / 2, 8, 16777215);
+		GuiUtil.drawDirtTexture(minecraft, 0, 0, -100, width, 32);
+		GuiUtil.drawDirtTexture(minecraft, 0, this.height - 58, -100, width, 58);
+		drawCenteredString(poseStack, this.font, this.title, this.width / 2, 8, 16777215);
 
 		if (addedPackDialog != null && addedPackDialogTimer > 0) {
-			drawCenteredText(matrices, this.textRenderer, addedPackDialog, (int) (this.width * 0.5), 21, 0xFFFFFF);
+			drawCenteredString(poseStack, this.font, addedPackDialog, (int) (this.width * 0.5), 21, 0xFFFFFF);
 		} else {
-			drawCenteredText(matrices, this.textRenderer, new TranslatableText("pack.iris.select.title").formatted(Formatting.GRAY, Formatting.ITALIC), (int) (this.width * 0.25), 21, 16777215);
-			drawCenteredText(matrices, this.textRenderer, new TranslatableText("pack.iris.configure.title").formatted(Formatting.GRAY, Formatting.ITALIC), (int) (this.width * 0.75), 21, 16777215);
+			drawCenteredString(poseStack, this.font, SELECT_TITLE, (int) (this.width * 0.25), 21, 16777215);
+			drawCenteredString(poseStack, this.font, CONFIGURE_TITLE, (int) (this.width * 0.75), 21, 16777215);
 		}
 
-		super.render(matrices, mouseX, mouseY, delta);
+		super.render(poseStack, mouseX, mouseY, delta);
 	}
 
 	@Override
@@ -84,34 +90,34 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 		super.init();
 		int bottomCenter = this.width / 2 - 50;
 		int topCenter = this.width / 2 - 76;
-		boolean inWorld = this.client.world != null;
+		boolean inWorld = this.minecraft.level != null;
 
-		this.shaderPackList = new ShaderPackListWidget(this.client, this.width / 2, this.height, 32, this.height - 58, 0, this.width / 2);
+		this.shaderPackList = new ShaderPackSelectionList(this.minecraft, this.width / 2, this.height, 32, this.height - 58, 0, this.width / 2);
 
 		if (inWorld) {
 			this.shaderPackList.setRenderBackground(false);
 		}
 
-		this.addDrawableChild(shaderPackList);
+		this.addRenderableWidget(shaderPackList);
 
 		this.refreshShaderPropertiesWidget();
 
-		this.addDrawableChild(new ButtonWidget(bottomCenter + 104, this.height - 27, 100, 20,
-				ScreenTexts.DONE, button -> onClose()));
+		this.addRenderableWidget(new Button(bottomCenter + 104, this.height - 27, 100, 20,
+				CommonComponents.GUI_DONE, button -> onClose()));
 
-		this.addDrawableChild(new ButtonWidget(bottomCenter, this.height - 27, 100, 20,
-				new TranslatableText("options.iris.apply"), button -> this.applyChanges()));
+		this.addRenderableWidget(new Button(bottomCenter, this.height - 27, 100, 20,
+				new TranslatableComponent("options.iris.apply"), button -> this.applyChanges()));
 
-		this.addDrawableChild(new ButtonWidget(bottomCenter - 104, this.height - 27, 100, 20,
-				ScreenTexts.CANCEL, button -> this.dropChangesAndClose()));
+		this.addRenderableWidget(new Button(bottomCenter - 104, this.height - 27, 100, 20,
+				CommonComponents.GUI_CANCEL, button -> this.dropChangesAndClose()));
 
-		this.addDrawableChild(new ButtonWidget(topCenter - 78, this.height - 51, 152, 20,
-				new TranslatableText("options.iris.openShaderPackFolder"), button -> openShaderPackFolder()));
+		this.addRenderableWidget(new Button(topCenter - 78, this.height - 51, 152, 20,
+				new TranslatableComponent("options.iris.openShaderPackFolder"), button -> openShaderPackFolder()));
 
-		this.addDrawableChild(new ButtonWidget(topCenter + 78, this.height - 51, 152, 20,
-				new TranslatableText("options.iris.refreshShaderPacks"), button -> this.shaderPackList.refresh()));
+		this.addRenderableWidget(new Button(topCenter + 78, this.height - 51, 152, 20,
+				new TranslatableComponent("options.iris.refreshShaderPacks"), button -> this.shaderPackList.refresh()));
 
-		this.addDrawableChild(new IrisConfigScreenButtonWidget(this.width - 26, 6, button -> client.setScreen(new IrisConfigScreen(this))));
+		this.addRenderableWidget(new IrisConfigScreenButton(this.width - 26, 6, button -> minecraft.setScreen(new IrisConfigScreen(this))));
 
 		if (parent != null) {
 			ScreenStack.push(parent);
@@ -121,8 +127,8 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 	@Override
 	public void tick() {
 		super.tick();
-		for (Element e : this.children()) {
-			if (e instanceof ShaderScreenEntryListWidget) ((ShaderScreenEntryListWidget) e).tick();
+		for (GuiEventListener e : this.children()) {
+			if (e instanceof IrisObjectSelectionList) ((IrisObjectSelectionList) e).tick();
 		}
 
 		if (this.addedPackDialogTimer > 0) {
@@ -131,7 +137,7 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 	}
 
 	@Override
-	public void filesDragged(List<Path> paths) {
+	public void onFilesDrop(List<Path> paths) {
 		List<Path> packs = paths.stream().filter(Iris::isValidShaderpack).collect(Collectors.toList());
 
 		for (Path pack : packs) {
@@ -140,10 +146,10 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 			try {
 				copyShaderPack(pack, fileName);
 			} catch (FileAlreadyExistsException e) {
-				this.addedPackDialog = new TranslatableText(
+				this.addedPackDialog = new TranslatableComponent(
 						"options.iris.shaderPackSelection.copyErrorAlreadyExists",
 						fileName
-				).formatted(Formatting.ITALIC, Formatting.RED);
+				).withStyle(ChatFormatting.ITALIC, ChatFormatting.RED);
 
 				this.addedPackDialogTimer = 100;
 				this.shaderPackList.refresh();
@@ -152,10 +158,10 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 			} catch (IOException e) {
 				Iris.logger.warn("Error copying dragged shader pack", e);
 
-				this.addedPackDialog = new TranslatableText(
+				this.addedPackDialog = new TranslatableComponent(
 						"options.iris.shaderPackSelection.copyError",
 						fileName
-				).formatted(Formatting.ITALIC, Formatting.RED);
+				).withStyle(ChatFormatting.ITALIC, ChatFormatting.RED);
 
 				this.addedPackDialogTimer = 100;
 				this.shaderPackList.refresh();
@@ -175,26 +181,26 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 				// If a single pack could not be added, provide a message with that pack in the file name
 				String fileName = paths.get(0).getFileName().toString();
 
-				this.addedPackDialog = new TranslatableText(
+				this.addedPackDialog = new TranslatableComponent(
 						"options.iris.shaderPackSelection.failedAddSingle",
 						fileName
-				).formatted(Formatting.ITALIC, Formatting.RED);
+				).withStyle(ChatFormatting.ITALIC, ChatFormatting.RED);
 			} else {
 				// Otherwise, show a generic message.
 
-				this.addedPackDialog = new TranslatableText(
+				this.addedPackDialog = new TranslatableComponent(
 						"options.iris.shaderPackSelection.failedAdd"
-				).formatted(Formatting.ITALIC, Formatting.RED);
+				).withStyle(ChatFormatting.ITALIC, ChatFormatting.RED);
 			}
 
 		} else if (packs.size() == 1) {
 			// In most cases, users will drag a single pack into the selection menu. So, let's special case it.
 			String packName = packs.get(0).getFileName().toString();
 
-			this.addedPackDialog = new TranslatableText(
+			this.addedPackDialog = new TranslatableComponent(
 					"options.iris.shaderPackSelection.addedPack",
 					packName
-			).formatted(Formatting.ITALIC, Formatting.YELLOW);
+			).withStyle(ChatFormatting.ITALIC, ChatFormatting.YELLOW);
 
 			// Select the pack that the user just added, since if a user just dragged a pack in, they'll probably want
 			// to actually use that pack afterwards.
@@ -202,10 +208,10 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 		} else {
 			// We also support multiple packs being dragged and dropped at a time. Just show a generic success message
 			// in that case.
-			this.addedPackDialog = new TranslatableText(
+			this.addedPackDialog = new TranslatableComponent(
 					"options.iris.shaderPackSelection.addedPacks",
 					packs.size()
-			).formatted(Formatting.ITALIC, Formatting.YELLOW);
+			).withStyle(ChatFormatting.ITALIC, ChatFormatting.YELLOW);
 		}
 
 		// Show the relevant message for 5 seconds (100 ticks)
@@ -252,7 +258,7 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 		}
 
 		ScreenStack.pull(this.getClass());
-		client.setScreen(ScreenStack.pop());
+		this.minecraft.setScreen(ScreenStack.pop());
 	}
 
 	private void dropChangesAndClose() {
@@ -261,13 +267,13 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 	}
 
 	private void applyChanges() {
-		ShaderPackListWidget.BaseEntry base = this.shaderPackList.getSelectedOrNull();
+		ShaderPackSelectionList.BaseEntry base = this.shaderPackList.getSelected();
 
-		if (!(base instanceof ShaderPackListWidget.ShaderPackEntry)) {
+		if (!(base instanceof ShaderPackSelectionList.ShaderPackEntry)) {
 			return;
 		}
 
-		ShaderPackListWidget.ShaderPackEntry entry = (ShaderPackListWidget.ShaderPackEntry) base;
+		ShaderPackSelectionList.ShaderPackEntry entry = (ShaderPackSelectionList.ShaderPackEntry)base;
 		IrisConfig config = Iris.getIrisConfig();
 
 		String name = entry.getPackName();
@@ -290,8 +296,8 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 			Iris.logger.error("Error reloading shader pack while applying changes!");
 			Iris.logger.catching(e);
 
-			if (this.client.player != null) {
-				this.client.player.sendMessage(new TranslatableText("iris.shaders.reloaded.failure", Throwables.getRootCause(e).getMessage()).formatted(Formatting.RED), false);
+			if (this.minecraft.player != null) {
+				this.minecraft.player.displayClientMessage(new TranslatableComponent("iris.shaders.reloaded.failure", Throwables.getRootCause(e).getMessage()).withStyle(ChatFormatting.RED), false);
 			}
 
 			Iris.getIrisConfig().setShadersEnabled(false);
@@ -306,7 +312,7 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 	}
 
 	private void refreshShaderPropertiesWidget() {
-		this.remove(shaderProperties);
+		this.removeWidget(shaderProperties);
 
 		float scrollAmount = 0.0f;
 		String page = "screen";
@@ -316,7 +322,7 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 			page = this.shaderProperties.getCurrentPage();
 		}
 		if (shaderProperties != null) this.shaderProperties.saveProperties();
-		this.shaderProperties = new PropertyDocumentWidget(this.client, this.width / 2, this.height, 32, this.height - 58, this.width / 2, this.width, 26);
+		this.shaderProperties = new PropertyDocumentWidget(this.minecraft, this.width / 2, this.height, 32, this.height - 58, this.width / 2, this.width, 26);
 		shaderProperties.onSave(() -> {
 			ShaderPack shaderPack = Iris.getCurrentPack().orElse(null);
 			if (shaderPack == null) {
@@ -416,13 +422,13 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 				e.printStackTrace();
 			}
 		});
-		if (this.client.world != null) this.shaderProperties.setRenderBackground(false);
+		if (this.minecraft.level != null) this.shaderProperties.setRenderBackground(false);
 		this.reloadShaderConfig();
 
 		this.shaderProperties.goTo(page);
 		this.shaderProperties.setScrollAmount(this.shaderProperties.getMaxScroll() * scrollAmount);
 
-		this.addDrawableChild(shaderProperties);
+		this.addRenderableWidget(shaderProperties);
 	}
 
 	private boolean setProfile(ShaderPackConfig config, ShaderProperties shaderProperties, String profileName, List<String> alreadyIncludedProfiles, boolean includeOnly) {
@@ -496,31 +502,31 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 	private void reloadShaderConfig() {
 		ShaderPack shaderPack = Iris.getCurrentPack().orElse(null);
 		if (shaderPack == null) {
-			this.shaderProperties.setDocument(PropertyDocumentWidget.createShaderpackConfigDocument(this.client.textRenderer, this.width / 2, "Shaders Disabled", null, this.shaderProperties), "screen");
+			this.shaderProperties.setDocument(PropertyDocumentWidget.createShaderpackConfigDocument(this.minecraft.font, this.width / 2, "Shaders Disabled", null, this.shaderProperties), "screen");
 			shaderProperties.loadProperties();
 			return;
 		}
-		this.shaderProperties.setDocument(PropertyDocumentWidget.createShaderpackConfigDocument(this.client.textRenderer, this.width / 2, Iris.getIrisConfig().getShaderPackName().orElse("Unnamed Shaderpack"), shaderPack, this.shaderProperties), "screen");
+		this.shaderProperties.setDocument(PropertyDocumentWidget.createShaderpackConfigDocument(this.minecraft.font, this.width / 2, Iris.getIrisConfig().getShaderPackName().orElse("Unnamed Shaderpack"), shaderPack, this.shaderProperties), "screen");
 		shaderProperties.loadProperties();
 	}
 
-	public class IrisConfigScreenButtonWidget extends ButtonWidget {
-		public IrisConfigScreenButtonWidget(int x, int y, PressAction press) {
-			super(x, y, 20, 20, new TranslatableText("tooltip.iris.config"), press);
+	public class IrisConfigScreenButton extends Button {
+		public IrisConfigScreenButton(int x, int y, OnPress press) {
+			super(x, y, 20, 20, new TranslatableComponent("tooltip.iris.config"), press);
 		}
 
 		@Override
-		public void render(MatrixStack matrices, int mouseX, int mouseY, float delta) {
+		public void render(PoseStack poseStack, int mouseX, int mouseY, float delta) {
 			GuiUtil.bindIrisWidgetsTexture();
-			drawTexture(matrices, x, y, isMouseOver(mouseX, mouseY) ? 20 : 0, 0, 20, 20);
+			blit(poseStack, x, y, isMouseOver(mouseX, mouseY) ? 20 : 0, 0, 20, 20);
 
 			if (isMouseOver(mouseX, mouseY)) {
-				renderTooltip(matrices, mouseX, mouseY);
+				renderTooltip(poseStack, new TranslatableComponent("tooltip.iris.config"), mouseX, mouseY);
 			}
 		}
 	}
 
 	private void openShaderPackFolder() {
-		Util.getOperatingSystem().open(Iris.SHADERPACKS_DIRECTORY.toFile());
+		Util.getPlatform().openFile(Iris.SHADERPACKS_DIRECTORY.toFile());
 	}
 }
