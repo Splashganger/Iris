@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '0.9-SNAPSHOT'
+	id 'fabric-loom' version '0.10.17'
 	id 'maven-publish'
 	id 'org.ajoberstar.grgit' version '4.1.0'
 }
@@ -12,7 +12,10 @@ version = "${project.mod_version}+${getVersionMetadata()}"
 group = project.maven_group
 
 loom {
-	refmapName = "iris-mc1.18-refmap.json"
+	mixin {
+		useLegacyMixinAp = true
+	}
+	mixin.defaultRefmapName = "iris-mc1.18-refmap.json"
 	accessWidenerPath = file("src/main/resources/iris.accesswidener")
 }
 
