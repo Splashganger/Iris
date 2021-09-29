@@ -227,7 +227,7 @@ public class PropertyDocumentWidget extends IrisObjectSelectionList<PropertyDocu
 
 		@Override
 		public Component getNarration() {
-			return null;
+			return property.getLabel();
 		}
 	}
 }
