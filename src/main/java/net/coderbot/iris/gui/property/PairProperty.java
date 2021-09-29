@@ -1,7 +1,7 @@
 package net.coderbot.iris.gui.property;
 
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.LiteralText;
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.minecraft.network.chat.TextComponent;
 
 public class PairProperty extends TupleProperty {
     protected final Property left;
@@ -11,7 +11,7 @@ public class PairProperty extends TupleProperty {
     protected int cachedX = 0;
 
     public PairProperty(Property left, Property right) {
-        super(new LiteralText(""));
+        super(new TextComponent(""));
         this.left = left;
         this.right = right;
     }
@@ -40,13 +40,13 @@ public class PairProperty extends TupleProperty {
     }
 
     @Override
-    public void render(MatrixStack matrices, int x, int y, int width, int height, int mouseX, int mouseY, boolean isHovered, float delta) {
+    public void render(PoseStack poseStack, int x, int y, int width, int height, int mouseX, int mouseY, boolean isHovered, float delta) {
         this.cachedWidth = width;
         this.cachedX = x;
         int w = (width / 2) - 2;
         boolean mouseLeft = mouseX < ((float)width / 2) + x;
-        left.render(matrices, x, y, w, height, mouseX, mouseY, isHovered && mouseLeft, delta);
-        right.render(matrices, x + w + 4, y, w, height, mouseX, mouseY, isHovered && !mouseLeft, delta);
+        left.render(poseStack, x, y, w, height, mouseX, mouseY, isHovered && mouseLeft, delta);
+        right.render(poseStack, x + w + 4, y, w, height, mouseX, mouseY, isHovered && !mouseLeft, delta);
     }
 
     @Override

@@ -1,13 +1,12 @@
 package net.coderbot.iris.gui.property;
 
-import com.google.common.collect.Lists;
+import com.mojang.blaze3d.platform.InputConstants;
+import com.mojang.blaze3d.vertex.PoseStack;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.gui.GuiUtil;
 import net.coderbot.iris.gui.element.PropertyDocumentWidget;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.List;
@@ -18,7 +17,7 @@ public abstract class OptionProperty<T> extends ValueProperty<T> {
     protected final int defaultIndex;
     protected final boolean isSlider;
 
-    public OptionProperty(List<T> values, int defaultIndex, PropertyDocumentWidget document, String key, Text label, boolean isSlider) {
+    public OptionProperty(List<T> values, int defaultIndex, PropertyDocumentWidget document, String key, Component label, boolean isSlider) {
         super(document, key, label);
         this.values = values;
         this.index = defaultIndex;
@@ -65,7 +64,7 @@ public abstract class OptionProperty<T> extends ValueProperty<T> {
             GuiUtil.playButtonClickSound();
             if (!isSlider) {
             	// Cycle in reverse if the shift key is pressed
-            	cycle(InputUtil.isKeyPressed(MinecraftClient.getInstance().getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT));
+            	cycle(InputConstants.isKeyDown(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT));
             }
             return true;
         }
@@ -74,7 +73,7 @@ public abstract class OptionProperty<T> extends ValueProperty<T> {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
-        if(isSlider && isButtonHovered(mouseX, true)) {
+        if (isSlider && isButtonHovered(mouseX, true)) {
             float pos = (float)((mouseX - (cachedX + (cachedWidth * 0.6) - 7)) / ((cachedWidth * 0.4)));
             this.index = Math.min((int)(pos * this.values.size()), this.values.size() - 1);
             this.valueText = null;
@@ -84,33 +83,33 @@ public abstract class OptionProperty<T> extends ValueProperty<T> {
     }
 
     @Override
-    public void render(MatrixStack matrices, int x, int y, int width, int height, int mouseX, int mouseY, boolean isHovered, float delta) {
+    public void render(PoseStack poseStack, int x, int y, int width, int height, int mouseX, int mouseY, boolean isHovered, float delta) {
         updateCaches(width, x);
-        MinecraftClient mc = MinecraftClient.getInstance();
-        this.drawText(mc, label, matrices, x + 10, y + (height / 2), 0xFFFFFF, false, true, true);
-        if(isSlider) this.renderSlider(mc, matrices, x, y, width, height, mouseX, isHovered);
-        else this.renderButton(mc, matrices, x, y, width, height, mouseX, isHovered);
+        Minecraft mc = Minecraft.getInstance();
+        this.drawText(mc, label, poseStack, x + 10, y + (height / 2), 0xFFFFFF, false, true, true);
+        if (isSlider) this.renderSlider(mc, poseStack, x, y, width, height, mouseX, isHovered);
+        else this.renderButton(mc, poseStack, x, y, width, height, mouseX, isHovered);
     }
 
-    private void renderButton(MinecraftClient mc, MatrixStack matrices, int x, int y, int width, int height, int mouseX, boolean isHovered) {
+    private void renderButton(Minecraft mc, PoseStack poseStack, int x, int y, int width, int height, int mouseX, boolean isHovered) {
         int bx = (int)(x + (width * 0.6)) - 7;
         int bw = (int)(width * 0.4);
 
-        GuiUtil.drawButton(matrices, bx, y, bw, height, this.isButtonHovered(mouseX, isHovered), false, false);
+        GuiUtil.drawButton(poseStack, bx, y, bw, height, this.isButtonHovered(mouseX, isHovered), false, false);
 
-        Text vt = this.getValueText();
-        this.drawText(mc, vt, matrices, (int)(x + (width * 0.8)) - (mc.textRenderer.getWidth(vt) / 2) - 7, y + (height / 2), 0xFFFFFF, false, true, true);
+        Component vt = this.getValueText();
+        this.drawText(mc, vt, poseStack, (int)(x + (width * 0.8)) - (mc.font.width(vt) / 2) - 7, y + (height / 2), 0xFFFFFF, false, true, true);
     }
 
-    private void renderSlider(MinecraftClient mc, MatrixStack matrices, int x, int y, int width, int height, int mouseX, boolean isHovered) {
+    private void renderSlider(Minecraft mc, PoseStack poseStack, int x, int y, int width, int height, int mouseX, boolean isHovered) {
         float progress = ((float)this.index / (this.values.size() - 1));
         int sx = (int)(x + (width * 0.6)) - 7;
         int sw = (int)(width * 0.4);
 
-        GuiUtil.drawSlider(matrices, sx, y, sw, height, this.isButtonHovered(mouseX, isHovered), progress);
+        GuiUtil.drawSlider(poseStack, sx, y, sw, height, this.isButtonHovered(mouseX, isHovered), progress);
 
-        Text vt = this.getValueText();
-        this.drawText(mc, vt, matrices, (int)(x + (width * 0.8)) - (mc.textRenderer.getWidth(vt) / 2) - 7, y + (height / 2), 0xFFFFFF, false, true, true);
+        Component vt = this.getValueText();
+        this.drawText(mc, vt, poseStack, (int)(x + (width * 0.8)) - (mc.font.width(vt) / 2) - 7, y + (height / 2), 0xFFFFFF, false, true, true);
     }
 
     @Override

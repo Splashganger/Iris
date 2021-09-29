@@ -1,5 +1,9 @@
 package net.coderbot.iris.shaderpack;
 
+import net.coderbot.iris.Iris;
+import org.apache.logging.log4j.Level;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -11,23 +15,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-
-import net.coderbot.iris.Iris;
-import net.coderbot.iris.gl.texture.InternalTextureFormat;
-import net.coderbot.iris.rendertarget.CustomNoiseTexture;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.texture.NativeImage;
-import net.minecraft.client.texture.NativeImageBackedTexture;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.InvalidIdentifierException;
-import net.minecraft.util.Util;
-import net.minecraft.util.registry.BuiltinRegistries;
-import net.minecraft.util.registry.DynamicRegistryManager;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
-import net.minecraft.world.World;
-import org.apache.logging.log4j.Level;
-import org.jetbrains.annotations.Nullable;
 
 public class ShaderPack {
 	private final ProgramSet base;

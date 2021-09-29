@@ -1,6 +1,6 @@
 package net.coderbot.iris.gui;
 
-import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.screens.Screen;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
