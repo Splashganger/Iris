@@ -49,7 +49,7 @@ public class ShaderPackSelectionList extends IrisObjectSelectionList<ShaderPackS
 		try {
 			this.addEntry(enableShadersButton);
 
-			Path path = Iris.SHADERPACKS_DIRECTORY;
+			Path path = Iris.getShaderpacksDirectory();
 			int index = 0;
 
 			for (String pack : BUILTIN_PACKS) {
