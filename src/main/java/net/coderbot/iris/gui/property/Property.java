@@ -56,4 +56,8 @@ public class Property {
         if (shadow) font.drawShadow(poseStack, text, centerX ? x - (int)((float)font.width(text) / 2) : x, centerY ? y - 4 : y, color);
         else font.draw(poseStack, text, centerX ? x - (int)((float)font.width(text) / 2) : x, centerY ? y - 4 : y, color);
     }
+
+	public Component getLabel() {
+		return label;
+	}
 }
