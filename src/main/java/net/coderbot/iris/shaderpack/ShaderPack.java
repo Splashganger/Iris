@@ -40,8 +40,10 @@ public class ShaderPack {
 		this.shaderProperties = loadProperties(root, "shaders.properties")
 			.map(ShaderProperties::new)
 			.orElseGet(ShaderProperties::empty);
-		this.config = new ShaderPackConfig(Iris.getIrisConfig().getShaderPackName().orElse(""));
-		this.config.load();
+		if (Iris.getIrisConfig() != null) {
+			this.config = new ShaderPackConfig(Iris.getIrisConfig().getShaderPackName().orElse(""));
+			this.config.load();
+		} else this.config = null;
 
 		this.base = new ProgramSet(root, root, this);
 		this.overworld = loadOverrides(root, "world0", this);
@@ -64,7 +66,7 @@ public class ShaderPack {
 				return null;
 			}
 		}).orElse(null);
-		this.config.save();
+		if (this.config != null) this.config.save();
 	}
 
 	@Nullable
