@@ -26,7 +26,7 @@ Non-starline specific part of the readme:
 ## Original Links
 
 * Visit [the Iris website](https://irisshaders.net) for normal, non-starline downloads and pretty screenshots!
-* Visit [the Iris Discord server](https://discord.gg/jQJnav2jPu) to chat about the mod and get support (no starline support here, see above starline for that)! It's also a great place to get devel//opment updates right as they're happening.
+* Visit [the Iris Discord server](https://discord.gg/jQJnav2jPu) to chat about the mod and get support (no starline support here, see above starline for that)! It's also a great place to get development updates right as they're happening.
 * Visit [the lead Iris developer's Patreon page](https://www.patreon.com/coderbot) to support the continued development of Iris!
 
 
