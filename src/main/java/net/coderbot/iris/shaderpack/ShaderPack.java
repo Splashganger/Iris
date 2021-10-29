@@ -46,7 +46,7 @@ public class ShaderPack {
 		} else this.config = null;
 
 		this.base = new ProgramSet(root, root, shaderProperties, this);
-		this.overworld = loadOverrides(root, "world0", shaderProperties,this);
+		this.overworld = loadOverrides(root, "world0", shaderProperties, this);
 		this.nether = loadOverrides(root, "world-1", shaderProperties, this);
 		this.end = loadOverrides(root, "world1", shaderProperties, this);
 
