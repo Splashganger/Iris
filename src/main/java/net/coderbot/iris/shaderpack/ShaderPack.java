@@ -45,10 +45,10 @@ public class ShaderPack {
 			this.config.load();
 		} else this.config = null;
 
-		this.base = new ProgramSet(root, root, this);
-		this.overworld = loadOverrides(root, "world0", this);
-		this.nether = loadOverrides(root, "world-1", this);
-		this.end = loadOverrides(root, "world1", this);
+		this.base = new ProgramSet(root, root, shaderProperties, this);
+		this.overworld = loadOverrides(root, "world0", shaderProperties, this);
+		this.nether = loadOverrides(root, "world-1", shaderProperties, this);
+		this.end = loadOverrides(root, "world1", shaderProperties, this);
 
 		this.idMap = new IdMap(root);
 		this.languageMap = new LanguageMap(root.resolve("lang"));
@@ -70,15 +70,15 @@ public class ShaderPack {
 	}
 
 	@Nullable
-	private static ProgramSet loadOverrides(Path root, String subfolder, ShaderPack pack) throws IOException {
+	private static ProgramSet loadOverrides(Path root, String subfolder, ShaderProperties shaderProperties, ShaderPack pack) throws IOException {
 		if (root == null) {
-			return new ProgramSet(null, null, pack);
+			return new ProgramSet(null, null, shaderProperties, pack);
 		}
 
 		Path sub = root.resolve(subfolder);
 
 		if (Files.exists(sub)) {
-			return new ProgramSet(sub, root, pack);
+			return new ProgramSet(sub, root, shaderProperties, pack);
 		}
 
 		return null;
