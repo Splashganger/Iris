@@ -3,8 +3,6 @@ package net.coderbot.iris.mixin;
 import com.mojang.blaze3d.platform.GlUtil;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.gui.screen.HudHideable;
-import net.coderbot.iris.uniforms.CapturedRenderingState;
-import net.coderbot.iris.uniforms.SystemTimeUniforms;
 import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
