@@ -8,12 +8,13 @@ A fork of Iris focused on bringing fixes and features to the user faster and to 
 2. Click Actions at the top of the page or visit this link: https://github.com/HyperCubeMC/Iris/actions
 - Each action has a bold title, a commit id, a timestamp, and a blue branch name containing the version (e.g `1.17-starline`)
 3. Find the latest (closest to the top) action with a blue branch name containing the version you want to download, and click on the bold title next to it
+- If the branch name does not have a version before it, it is for 1.16
 4. At the bottom, there should be a text that says Artifacts, with a size next to it
 5. Click the bold text labeled "Artifacts" to download a zip containing the built starline jars
 - If you are unable to click it and nothing happens, you are not logged into a GitHub account and you need to login or create a new one
 6. Extract the zip by right-clicking it and pressing extract
 7. After it has been extracted, there should be 4 jars. Copy the one without -sources or -dev on the end, just -starline, a build number and .jar
-8. Remove normal iris in your mods folder (or iris-reserved folder, if you used the installer with use custom loader checked) and paste in the new starline jar
+8. Remove normal iris from your mods folder (or iris-reserved folder, if you used the installer with use custom loader checked) and paste in the new starline jar
 9. Repeat these steps for starline sodium, found at https://github.com/HyperCubeMC/sodium-fabric
 
 Starline specific info:
