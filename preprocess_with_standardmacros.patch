@@ -1,0 +1,495 @@
+diff --git a/src/main/java/net/coderbot/iris/gl/program/ProgramBuilder.java b/src/main/java/net/coderbot/iris/gl/program/ProgramBuilder.java
+index d99b07d0..afe33421 100644
+--- a/src/main/java/net/coderbot/iris/gl/program/ProgramBuilder.java
++++ b/src/main/java/net/coderbot/iris/gl/program/ProgramBuilder.java
+@@ -2,16 +2,29 @@ package net.coderbot.iris.gl.program;
+ 
+ import com.google.common.collect.ImmutableSet;
+ import com.mojang.blaze3d.systems.RenderSystem;
++import net.coderbot.iris.Iris;
+ import net.coderbot.iris.gl.sampler.SamplerHolder;
+ import net.coderbot.iris.gl.shader.GlShader;
+ import net.coderbot.iris.gl.shader.ProgramCreator;
+ import net.coderbot.iris.gl.shader.ShaderConstants;
+ import net.coderbot.iris.gl.shader.ShaderType;
+ import net.coderbot.iris.gl.shader.StandardMacros;
++import net.coderbot.iris.shaderpack.CommentDirectiveParser;
++import org.anarres.cpp.DefaultPreprocessorListener;
++import org.anarres.cpp.Feature;
++import org.anarres.cpp.Preprocessor;
++import org.anarres.cpp.StringLexerSource;
++import org.anarres.cpp.Token;
+ import org.jetbrains.annotations.Nullable;
+ import org.lwjgl.opengl.GL20C;
+ import org.lwjgl.opengl.GL21C;
+ 
++import java.io.BufferedReader;
++import java.io.IOException;
++import java.io.StringReader;
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Optional;
+ import java.util.function.IntSupplier;
+ 
+ public class ProgramBuilder extends ProgramUniforms.Builder implements SamplerHolder {
+@@ -31,11 +44,14 @@ public class ProgramBuilder extends ProgramUniforms.Builder implements SamplerHo
+ 	private final int program;
+ 	private final ProgramSamplers.Builder samplers;
+ 
+-	private ProgramBuilder(String name, int program, ImmutableSet<Integer> reservedTextureUnits) {
++	private final int[] drawBuffers;
++
++	private ProgramBuilder(String name, int program, ImmutableSet<Integer> reservedTextureUnits, int[] drawBuffers) {
+ 		super(name, program);
+ 
+ 		this.program = program;
+ 		this.samplers = ProgramSamplers.builder(program, reservedTextureUnits);
++		this.drawBuffers = drawBuffers;
+ 	}
+ 
+ 	public void bindAttributeLocation(int index, String name) {
+@@ -50,16 +66,21 @@ public class ProgramBuilder extends ProgramUniforms.Builder implements SamplerHo
+ 		GlShader geometry;
+ 		GlShader fragment;
+ 
++		vertexSource = processShader(vertexSource);
+ 		vertex = buildShader(ShaderType.VERTEX, name + ".vsh", vertexSource);
+ 
+ 		if (geometrySource != null) {
++			geometrySource = processShader(geometrySource);
+ 			geometry = buildShader(ShaderType.GEOMETRY, name + ".gsh", geometrySource);
+ 		} else {
+ 			geometry = null;
+ 		}
+ 
++		fragmentSource = processShader(fragmentSource);
+ 		fragment = buildShader(ShaderType.FRAGMENT, name + ".fsh", fragmentSource);
+ 
++		int[] drawBuffers = findDrawbuffersDirective(Optional.ofNullable(fragmentSource)).orElse(new int[] { 0 });
++
+ 		int programId;
+ 
+ 		if (geometry != null) {
+@@ -76,7 +97,7 @@ public class ProgramBuilder extends ProgramUniforms.Builder implements SamplerHo
+ 
+ 		fragment.destroy();
+ 
+-		return new ProgramBuilder(name, programId, reservedTextureUnits);
++		return new ProgramBuilder(name, programId, reservedTextureUnits, drawBuffers);
+ 	}
+ 
+ 	public Program build() {
+@@ -85,12 +106,121 @@ public class ProgramBuilder extends ProgramUniforms.Builder implements SamplerHo
+ 
+ 	private static GlShader buildShader(ShaderType shaderType, String name, @Nullable String source) {
+ 		try {
+-			return new GlShader(shaderType, name, source, MACRO_CONSTANTS);
++			return new GlShader(shaderType, name, source);
+ 		} catch (RuntimeException e) {
+ 			throw new RuntimeException("Failed to compile " + shaderType + " shader for program " + name, e);
+ 		}
+ 	}
+ 
++	/**
++	 * Adds an additional list of defines to the top of a GLSL shader file just after the version declaration. This
++	 * allows for ghetto shader specialization.
++	 */
++	private static String processShader(String src) {
++		StringBuilder builder = new StringBuilder(src.length());
++		boolean patched = false;
++
++		try (BufferedReader reader = new BufferedReader(new StringReader(src))) {
++			String line;
++
++			while ((line = reader.readLine()) != null) {
++				// Write the line out to the patched GLSL code string
++				builder.append(line).append("\n");
++
++				// Now, see if the line we just wrote declares the version
++				// If we haven't already added our define declarations, add them just after the version declaration
++				if (!patched && line.startsWith("#version")) {
++					for (String macro : MACRO_CONSTANTS.getDefineStrings()) {
++						builder.append(macro).append('\n');
++					}
++
++					// We did our work, don't add them again
++					patched = true;
++				}
++			}
++		} catch (IOException e) {
++			throw new RuntimeException("Could not process shader source", e);
++		}
++
++		return preprocessSourceDirectives(builder.toString());
++	}
++
++	// Derived from GlShader.glslPreprocessSource from Canvas, licenced under LGPL
++	private static String preprocessSourceDirectives(String source) {
++		// The C preprocessor won't understand the #version or #extension tokens, so we must remove them and re-add them later.
++		source = source.substring(source.indexOf("#version"));
++		int versionStringEnd = source.indexOf('\n');
++
++		String versionLine = source.substring(0, versionStringEnd);
++		source = source.substring(versionStringEnd + 1);
++
++		// TODO: Extension directives can be put in conditions too, we need to find a way to have JCPP preprocess them
++		List<String> extensionLines = new ArrayList<>();
++
++		while (source.contains("#extension")) {
++			int extensionLineStart = source.indexOf("#extension");
++			int extensionLineEnd = source.indexOf("\n", extensionLineStart);
++
++			String extensionLine = source.substring(extensionLineStart, extensionLineEnd);
++			source = source.replaceFirst(extensionLine, "");
++
++			extensionLines.add(extensionLine);
++		}
++
++		@SuppressWarnings("resource")
++		final Preprocessor pp = new Preprocessor();
++		pp.setListener(new DefaultPreprocessorListener());
++		pp.addInput(new StringLexerSource(source, true));
++		pp.addFeature(Feature.KEEPCOMMENTS);
++
++		final StringBuilder builder = new StringBuilder();
++
++		try {
++			for (;;) {
++				final Token tok = pp.token();
++				if (tok == null) break;
++				if (tok.getType() == Token.EOF) break;
++				builder.append(tok.getText());
++			}
++		} catch (final Exception e) {
++			Iris.logger.error("GLSL source pre-processing failed", e);
++		}
++
++		builder.append("\n");
++
++		// restore extensions
++		for (String line : extensionLines) {
++			builder.insert(0, line + "\n");
++		}
++
++		// restore GLSL version
++		builder.insert(0, versionLine + "\n");
++
++		return builder.toString();
++	}
++
++	private static Optional<int[]> findDrawbuffersDirective(Optional<String> stageSource) {
++		return stageSource
++				.flatMap(fragment -> CommentDirectiveParser.findDirective(fragment, "DRAWBUFFERS"))
++				.map(String::toCharArray)
++				.map(ProgramBuilder::parseDigits);
++	}
++
++	private static int[] parseDigits(char[] directiveChars) {
++		int[] buffers = new int[directiveChars.length];
++		int index = 0;
++
++		for (char buffer : directiveChars) {
++			buffers[index++] = Character.digit(buffer, 10);
++		}
++
++		return buffers;
++	}
++
++	public int[] getDrawBuffers() {
++		return drawBuffers;
++	}
++
+ 	@Override
+ 	public void addExternalSampler(int textureUnit, String... names) {
+ 		samplers.addExternalSampler(textureUnit, names);
+diff --git a/src/main/java/net/coderbot/iris/gl/shader/GlShader.java b/src/main/java/net/coderbot/iris/gl/shader/GlShader.java
+index 8ac5b253..079ee325 100644
+--- a/src/main/java/net/coderbot/iris/gl/shader/GlShader.java
++++ b/src/main/java/net/coderbot/iris/gl/shader/GlShader.java
+@@ -7,10 +7,6 @@ import org.apache.logging.log4j.LogManager;
+ import org.apache.logging.log4j.Logger;
+ import org.lwjgl.opengl.GL20C;
+ 
+-import java.io.BufferedReader;
+-import java.io.IOException;
+-import java.io.StringReader;
+-
+ /**
+  * A compiled OpenGL shader object.
+  */
+@@ -19,15 +15,13 @@ public class GlShader extends GlResource {
+ 
+     private final String name;
+ 
+-    public GlShader(ShaderType type, String name, String src, ShaderConstants constants) {
+-    	super(createShader(type, name, src, constants));
++    public GlShader(ShaderType type, String name, String src) {
++    	super(createShader(type, name, src));
+ 
+         this.name = name;
+     }
+ 
+-    private static int createShader(ShaderType type, String name, String src, ShaderConstants constants) {
+-		src = processShader(src, constants);
+-
++    private static int createShader(ShaderType type, String name, String src) {
+ 		int handle = GL20C.glCreateShader(type.id);
+ 		ShaderWorkarounds.safeShaderSource(handle, src);
+ 		GL20C.glCompileShader(handle);
+@@ -47,39 +41,6 @@ public class GlShader extends GlResource {
+ 		return handle;
+ 	}
+ 
+-    /**
+-     * Adds an additional list of defines to the top of a GLSL shader file just after the version declaration. This
+-     * allows for ghetto shader specialization.
+-     */
+-    private static String processShader(String src, ShaderConstants constants) {
+-        StringBuilder builder = new StringBuilder(src.length());
+-        boolean patched = false;
+-
+-        try (BufferedReader reader = new BufferedReader(new StringReader(src))) {
+-            String line;
+-
+-            while ((line = reader.readLine()) != null) {
+-                // Write the line out to the patched GLSL code string
+-                builder.append(line).append("\n");
+-
+-                // Now, see if the line we just wrote declares the version
+-                // If we haven't already added our define declarations, add them just after the version declaration
+-                if (!patched && line.startsWith("#version")) {
+-                    for (String macro : constants.getDefineStrings()) {
+-                        builder.append(macro).append('\n');
+-                    }
+-
+-                    // We did our work, don't add them again
+-                    patched = true;
+-                }
+-            }
+-        } catch (IOException e) {
+-            throw new RuntimeException("Could not process shader source", e);
+-        }
+-
+-        return builder.toString();
+-    }
+-
+     public String getName() {
+         return this.name;
+     }
+diff --git a/src/main/java/net/coderbot/iris/pipeline/DeferredWorldRenderingPipeline.java b/src/main/java/net/coderbot/iris/pipeline/DeferredWorldRenderingPipeline.java
+index 2be0ac39..4934630b 100644
+--- a/src/main/java/net/coderbot/iris/pipeline/DeferredWorldRenderingPipeline.java
++++ b/src/main/java/net/coderbot/iris/pipeline/DeferredWorldRenderingPipeline.java
+@@ -480,6 +480,8 @@ public class DeferredWorldRenderingPipeline implements WorldRenderingPipeline {
+ 			throw new RuntimeException("Shader compilation failed!", e);
+ 		}
+ 
++		source.getDirectives().setDrawBuffers(builder.getDrawBuffers());
++
+ 		CommonUniforms.addCommonUniforms(builder, source.getParent().getPack().getIdMap(), source.getParent().getPackDirectives(), updateNotifier);
+ 
+ 		Supplier<ImmutableSet<Integer>> flipped =
+diff --git a/src/main/java/net/coderbot/iris/pipeline/ShadowRenderer.java b/src/main/java/net/coderbot/iris/pipeline/ShadowRenderer.java
+index 0b23a743..b5c1ec74 100644
+--- a/src/main/java/net/coderbot/iris/pipeline/ShadowRenderer.java
++++ b/src/main/java/net/coderbot/iris/pipeline/ShadowRenderer.java
+@@ -256,6 +256,8 @@ public class ShadowRenderer implements ShadowMapRenderer {
+ 			throw new RuntimeException("Shader compilation failed!", e);
+ 		}
+ 
++		source.getDirectives().setDrawBuffers(builder.getDrawBuffers());
++
+ 		CommonUniforms.addCommonUniforms(builder, source.getParent().getPack().getIdMap(), directives, ((DeferredWorldRenderingPipeline) pipeline).getUpdateNotifier());
+ 		IrisSamplers.addRenderTargetSamplers(builder, flipped, gbufferRenderTargets, false);
+ 		IrisSamplers.addLevelSamplers(builder, normals, specular);
+diff --git a/src/main/java/net/coderbot/iris/postprocess/CompositeRenderer.java b/src/main/java/net/coderbot/iris/postprocess/CompositeRenderer.java
+index 575f964a..f10ff8e9 100644
+--- a/src/main/java/net/coderbot/iris/postprocess/CompositeRenderer.java
++++ b/src/main/java/net/coderbot/iris/postprocess/CompositeRenderer.java
+@@ -191,6 +191,8 @@ public class CompositeRenderer {
+ 			throw new RuntimeException("Shader compilation failed!", e);
+ 		}
+ 
++		source.getDirectives().setDrawBuffers(builder.getDrawBuffers());
++
+ 		CommonUniforms.addCommonUniforms(builder, source.getParent().getPack().getIdMap(), source.getParent().getPackDirectives(), updateNotifier);
+ 		IrisSamplers.addRenderTargetSamplers(builder, () -> flipped, renderTargets, true);
+ 		IrisSamplers.addNoiseSampler(builder, noiseTexture);
+diff --git a/src/main/java/net/coderbot/iris/postprocess/FinalPassRenderer.java b/src/main/java/net/coderbot/iris/postprocess/FinalPassRenderer.java
+index 30a8e459..a45397a4 100644
+--- a/src/main/java/net/coderbot/iris/postprocess/FinalPassRenderer.java
++++ b/src/main/java/net/coderbot/iris/postprocess/FinalPassRenderer.java
+@@ -229,6 +229,8 @@ public class FinalPassRenderer {
+ 			throw new RuntimeException("Shader compilation failed!", e);
+ 		}
+ 
++		source.getDirectives().setDrawBuffers(builder.getDrawBuffers());
++
+ 		CommonUniforms.addCommonUniforms(builder, source.getParent().getPack().getIdMap(), source.getParent().getPackDirectives(), updateNotifier);
+ 		IrisSamplers.addRenderTargetSamplers(builder, () -> flipped, renderTargets, true);
+ 		IrisSamplers.addNoiseSampler(builder, noiseTexture);
+diff --git a/src/main/java/net/coderbot/iris/shaderpack/ProgramDirectives.java b/src/main/java/net/coderbot/iris/shaderpack/ProgramDirectives.java
+index afd9ae78..624c266c 100644
+--- a/src/main/java/net/coderbot/iris/shaderpack/ProgramDirectives.java
++++ b/src/main/java/net/coderbot/iris/shaderpack/ProgramDirectives.java
+@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
+ public class ProgramDirectives {
+ 	private static final ImmutableList<String> LEGACY_RENDER_TARGETS = PackRenderTargetDirectives.LEGACY_RENDER_TARGETS;
+ 
+-	private final int[] drawBuffers;
++	private int[] drawBuffers;
+ 	private final float viewportScale;
+ 	@Nullable
+ 	private final AlphaTestOverride alphaTestOverride;
+@@ -28,7 +28,7 @@ public class ProgramDirectives {
+ 		// undefined data to be written to colortex7.
+ 		//
+ 		// TODO: Figure out how to infer the DRAWBUFFERS directive when it is missing.
+-		drawBuffers = findDrawbuffersDirective(source.getFragmentSource()).orElse(new int[] { 0 });
++//		drawBuffers = findDrawbuffersDirective(source.getFragmentSource()).orElse(new int[] { 0 });
+ 
+ 		if (properties != null) {
+ 			viewportScale = properties.getViewportScaleOverrides().getOrDefault(source.getName(), 1.0f);
+@@ -68,22 +68,8 @@ public class ProgramDirectives {
+ 		this.mipmappedBuffers = ImmutableSet.copyOf(mipmappedBuffers);
+ 	}
+ 
+-	private static Optional<int[]> findDrawbuffersDirective(Optional<String> stageSource) {
+-		return stageSource
+-			.flatMap(fragment -> CommentDirectiveParser.findDirective(fragment, "DRAWBUFFERS"))
+-			.map(String::toCharArray)
+-			.map(ProgramDirectives::parseDigits);
+-	}
+-
+-	private static int[] parseDigits(char[] directiveChars) {
+-		int[] buffers = new int[directiveChars.length];
+-		int index = 0;
+-
+-		for (char buffer : directiveChars) {
+-			buffers[index++] = Character.digit(buffer, 10);
+-		}
+-
+-		return buffers;
++	public void setDrawBuffers(int[] drawBuffers) {
++		this.drawBuffers = drawBuffers;
+ 	}
+ 
+ 	public int[] getDrawBuffers() {
+diff --git a/src/main/java/net/coderbot/iris/shaderpack/PropertiesPreprocessor.java b/src/main/java/net/coderbot/iris/shaderpack/PropertiesPreprocessor.java
+index 3b72acc8..320d2b82 100644
+--- a/src/main/java/net/coderbot/iris/shaderpack/PropertiesPreprocessor.java
++++ b/src/main/java/net/coderbot/iris/shaderpack/PropertiesPreprocessor.java
+@@ -17,7 +17,7 @@ public class PropertiesPreprocessor {
+ 		return preprocessSource(source);
+ 	}
+ 
+-	// Derived from ShaderProcessor.glslPreprocessSource, which is derived from GlShader from Canvas, licenced under LGPL
++	// Derived from ProgramBuilder.preprocessSourceDirectives, which is derived from GlShader from Canvas, licenced under LGPL
+ 	public static String preprocessSource(String source) {
+ 		@SuppressWarnings("resource")
+ 		final Preprocessor pp = new Preprocessor();
+@@ -35,13 +35,11 @@ public class PropertiesPreprocessor {
+ 				builder.append(tok.getText());
+ 			}
+ 		} catch (final Exception e) {
+-			Iris.logger.error("Properties pre-processing failed", e);
++			Iris.logger.error("Properties preprocessing failed", e);
+ 		}
+ 
+ 		builder.append("\n");
+ 
+-		source = builder.toString();
+-
+-		return source;
++		return builder.toString();
+ 	}
+ }
+diff --git a/src/main/java/net/coderbot/iris/shaderpack/ShaderPreprocessor.java b/src/main/java/net/coderbot/iris/shaderpack/ShaderPreprocessor.java
+index d47ff2ae..b4a193ff 100644
+--- a/src/main/java/net/coderbot/iris/shaderpack/ShaderPreprocessor.java
++++ b/src/main/java/net/coderbot/iris/shaderpack/ShaderPreprocessor.java
+@@ -1,12 +1,5 @@
+ package net.coderbot.iris.shaderpack;
+ 
+-import net.coderbot.iris.Iris;
+-import org.anarres.cpp.DefaultPreprocessorListener;
+-import org.anarres.cpp.Feature;
+-import org.anarres.cpp.Preprocessor;
+-import org.anarres.cpp.StringLexerSource;
+-import org.anarres.cpp.Token;
+-
+ import java.io.IOException;
+ import java.nio.charset.StandardCharsets;
+ import java.nio.file.Files;
+@@ -25,7 +18,7 @@ public class ShaderPreprocessor {
+ 			processed.append('\n');
+ 		}
+ 
+-		return glslPreprocessSource(processed.toString());
++		return processed.toString();
+ 	}
+ 
+ 	private static List<String> processInternal(Path rootPath, Path shaderPath, String source) throws IOException {
+@@ -94,62 +87,4 @@ public class ShaderPreprocessor {
+ 	private static String readFile(Path path) throws IOException {
+ 		return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+ 	}
+-
+-
+-	// Derived from GlShader from Canvas, licenced under LGPL
+-	public static String glslPreprocessSource(String source) {
+-		// NB: This doesn't work when ran in the above methods, only directly when creating the pass for some reason.
+-		// The C preprocessor won't understand the #version token, so we must remove it and readd it later.
+-
+-		source = source.substring(source.indexOf("#version"));
+-		int versionStringEnd = source.indexOf('\n');
+-
+-		String versionLine = source.substring(0, versionStringEnd);
+-		source = source.substring(versionStringEnd + 1);
+-
+-		List<String> extensionLines = new ArrayList<>();
+-
+-		while (source.contains("#extension")) {
+-			int extensionLineStart = source.indexOf("#extension");
+-			int extensionLineEnd = source.indexOf("\n", extensionLineStart);
+-
+-			String extensionLine = source.substring(extensionLineStart, extensionLineEnd);
+-			source = source.replaceFirst(extensionLine, "");
+-
+-			extensionLines.add(extensionLine);
+-		}
+-
+-		@SuppressWarnings("resource")
+-		final Preprocessor pp = new Preprocessor();
+-		pp.setListener(new DefaultPreprocessorListener());
+-		pp.addInput(new StringLexerSource(source, true));
+-		pp.addFeature(Feature.KEEPCOMMENTS);
+-
+-		final StringBuilder builder = new StringBuilder();
+-
+-		try {
+-			for (;;) {
+-				final Token tok = pp.token();
+-				if (tok == null) break;
+-				if (tok.getType() == Token.EOF) break;
+-				builder.append(tok.getText());
+-			}
+-		} catch (final Exception e) {
+-			Iris.logger.error("GLSL source pre-processing failed", e);
+-		}
+-
+-		builder.append("\n");
+-
+-		// restore extensions
+-		for (String line : extensionLines) {
+-			builder.insert(0, line + "\n");
+-		}
+-
+-		// restore GLSL version
+-		builder.insert(0, versionLine + "\n");
+-
+-		source = builder.toString();
+-
+-		return source;
+-	}
+ }
