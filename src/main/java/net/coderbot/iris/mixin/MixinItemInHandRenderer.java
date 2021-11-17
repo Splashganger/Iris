@@ -1,6 +1,7 @@
 package net.coderbot.iris.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import net.coderbot.iris.Iris;
 import net.coderbot.iris.gui.screen.HudHideable;
 import net.coderbot.iris.pipeline.HandRenderer;
 import net.minecraft.client.Minecraft;
@@ -22,12 +23,14 @@ public class MixinItemInHandRenderer {
 
 	@Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true)
 	private void skipTranslucentHands(AbstractClientPlayer abstractClientPlayer, float f, float g, InteractionHand interactionHand, float h, ItemStack itemStack, float i, PoseStack poseStack, MultiBufferSource multiBufferSource, int j, CallbackInfo ci) {
-    	if (this.minecraft.screen instanceof HudHideable) ci.cancel();
+		if (this.minecraft.screen instanceof HudHideable) ci.cancel();
 
-		if (HandRenderer.INSTANCE.isRenderingSolid() && HandRenderer.INSTANCE.isHandTranslucent(interactionHand)) {
-			ci.cancel();
-		} else if (!HandRenderer.INSTANCE.isRenderingSolid() && !HandRenderer.INSTANCE.isHandTranslucent(interactionHand)) {
-			ci.cancel();
+		if (Iris.getCurrentPack().isPresent()) {
+			if (HandRenderer.INSTANCE.isRenderingSolid() && HandRenderer.INSTANCE.isHandTranslucent(interactionHand)) {
+				ci.cancel();
+			} else if (!HandRenderer.INSTANCE.isRenderingSolid() && !HandRenderer.INSTANCE.isHandTranslucent(interactionHand)) {
+				ci.cancel();
+			}
 		}
 	}
 }
