@@ -2,6 +2,7 @@ package net.coderbot.iris.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.coderbot.iris.gui.screen.HudHideable;
+import net.coderbot.iris.pipeline.HandRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.ItemInHandRenderer;
@@ -17,10 +18,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ItemInHandRenderer.class)
 public class MixinItemInHandRenderer {
-    @Shadow @Final private Minecraft minecraft;
+	@Shadow @Final private Minecraft minecraft;
 
-    @Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true)
-    public void iris$handleHudHidingScreens(AbstractClientPlayer abstractClientPlayer, float f, float g, InteractionHand interactionHand, float h, ItemStack itemStack, float i, PoseStack poseStack, MultiBufferSource multiBufferSource, int j, CallbackInfo ci) {
-        if (this.minecraft.screen instanceof HudHideable) ci.cancel();
-    }
+	@Inject(method = "renderArmWithItem", at = @At("HEAD"), cancellable = true)
+	private void skipTranslucentHands(AbstractClientPlayer abstractClientPlayer, float f, float g, InteractionHand interactionHand, float h, ItemStack itemStack, float i, PoseStack poseStack, MultiBufferSource multiBufferSource, int j, CallbackInfo ci) {
+    	if (this.minecraft.screen instanceof HudHideable) ci.cancel();
+
+		if (HandRenderer.INSTANCE.isRenderingSolid() && HandRenderer.INSTANCE.isHandTranslucent(interactionHand)) {
+			ci.cancel();
+		} else if (!HandRenderer.INSTANCE.isRenderingSolid() && !HandRenderer.INSTANCE.isHandTranslucent(interactionHand)) {
+			ci.cancel();
+		}
+	}
 }
