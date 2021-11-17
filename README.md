@@ -15,7 +15,6 @@ A fork of Iris focused on bringing fixes and features to the user faster and to 
 6. Extract the zip by right-clicking it and pressing extract
 7. After it has been extracted, there should be 4 jars. Copy the one without -sources or -dev on the end, just -starline, a build number and .jar
 8. Remove normal iris from your mods folder (or iris-reserved folder, if you used the installer with use custom loader checked) and paste in the new starline jar
-9. Repeat these steps for starline sodium, found at https://github.com/HyperCubeMC/sodium-fabric
 
 Starline specific info:
 
