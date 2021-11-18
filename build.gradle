@@ -38,17 +38,13 @@ dependencies {
 
 if (project.sodium_compatibility == "true") {
 	repositories {
-		maven {
-			name = "Modrinth"
-			url = "https://api.modrinth.com/maven"
-			content {
-				includeGroup "maven.modrinth"
-			}
+		flatDir {
+			dirs 'libs'
 		}
 	}
 
 	dependencies {
-		modImplementation "maven.modrinth:sodium:" + project.sodium_version
+		modImplementation name: project.sodium_jar
 	}
 }
 
