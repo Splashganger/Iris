@@ -34,6 +34,9 @@ public class MixinGameRenderer {
 	@Shadow @Final
 	private Minecraft minecraft;
 
+	@Shadow
+	private boolean renderHand;
+
 	@Inject(method = "<init>", at = @At("TAIL"))
 	private void iris$logSystem(Minecraft client, ResourceManager resourceManager, RenderBuffers bufferBuilderStorage,
 								CallbackInfo ci) {
@@ -54,7 +57,7 @@ public class MixinGameRenderer {
 
 	@Redirect(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/GameRenderer;renderHand:Z"))
 	private boolean disableVanillaHandRendering(GameRenderer gameRenderer) {
-		return !Iris.getCurrentPack().isPresent();
+		return !Iris.getCurrentPack().isPresent() && renderHand;
 	}
 
 	@Inject(method = "getPositionShader", at = @At("HEAD"), cancellable = true)
