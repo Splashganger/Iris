@@ -71,9 +71,9 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 		this.shaderPackList.render(poseStack, mouseX, mouseY, delta);
 		this.shaderProperties.render(poseStack, mouseX, mouseY, delta);
 
-		GuiUtil.drawDirtTexture(minecraft, 0, 0, -100, width, 32);
-		GuiUtil.drawDirtTexture(minecraft, 0, this.height - 58, -100, width, 58);
-		drawCenteredString(poseStack, this.font, this.title, this.width / 2, 8, 16777215);
+		super.render(poseStack, mouseX, mouseY, delta);
+
+		drawCenteredString(poseStack, this.font, this.title, (int)(this.width * 0.5), 8, 0xFFFFFF);
 
 		if (addedPackDialog != null && addedPackDialogTimer > 0) {
 			drawCenteredString(poseStack, this.font, addedPackDialog, (int) (this.width * 0.5), 21, 0xFFFFFF);
@@ -81,8 +81,6 @@ public class ShaderPackScreen extends Screen implements HudHideable {
 			drawCenteredString(poseStack, this.font, SELECT_TITLE, (int) (this.width * 0.25), 21, 16777215);
 			drawCenteredString(poseStack, this.font, CONFIGURE_TITLE, (int) (this.width * 0.75), 21, 16777215);
 		}
-
-		super.render(poseStack, mouseX, mouseY, delta);
 	}
 
 	@Override
