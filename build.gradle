@@ -51,6 +51,7 @@ if (project.sodium_compatibility == "true") {
 	dependencies {
 		// Temporary, while official Sodium doesn't exist for 1.18.
 		modImplementation name: project.sodium_jar
+		implementation "org.joml:joml:1.10.2"
 		modImplementation fabricApi.module("fabric-rendering-data-attachment-v1", project.fabric_version)
 		modImplementation fabricApi.module("fabric-rendering-fluids-v1", project.fabric_version)
 	}
