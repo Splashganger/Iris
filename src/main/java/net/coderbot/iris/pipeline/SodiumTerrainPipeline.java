@@ -5,14 +5,12 @@ import java.util.function.IntFunction;
 
 import com.google.common.collect.ImmutableSet;
 import net.coderbot.iris.Iris;
-import net.coderbot.iris.IrisLogging;
 import net.coderbot.iris.gl.blending.AlphaTest;
 import net.coderbot.iris.gl.blending.AlphaTestFunction;
 import net.coderbot.iris.gl.framebuffer.GlFramebuffer;
 import net.coderbot.iris.gl.program.ProgramSamplers;
 import net.coderbot.iris.gl.program.ProgramUniforms;
 import net.coderbot.iris.gl.shader.ShaderType;
-import net.coderbot.iris.pipeline.newshader.CoreWorldRenderingPipeline;
 import net.coderbot.iris.pipeline.newshader.FogMode;
 import net.coderbot.iris.pipeline.newshader.ShaderAttributeInputs;
 import net.coderbot.iris.pipeline.newshader.TriforceSodiumPatcher;
@@ -20,7 +18,6 @@ import net.coderbot.iris.rendertarget.RenderTargets;
 import net.coderbot.iris.shaderpack.ProgramSet;
 import net.coderbot.iris.shaderpack.ProgramSource;
 import net.coderbot.iris.uniforms.CommonUniforms;
-import net.coderbot.iris.uniforms.FrameUpdateNotifier;
 import net.coderbot.iris.uniforms.builtin.BuiltinReplacementUniforms;
 
 public class SodiumTerrainPipeline {
@@ -188,23 +185,8 @@ public class SodiumTerrainPipeline {
 	public ProgramUniforms initUniforms(int programId) {
 		ProgramUniforms.Builder uniforms = ProgramUniforms.builder("<sodium shaders>", programId);
 
-		FrameUpdateNotifier updateNotifier;
-
 		WorldRenderingPipeline pipeline = Iris.getPipelineManager().getPipeline();
-
-		if (pipeline instanceof DeferredWorldRenderingPipeline) {
-			updateNotifier = ((DeferredWorldRenderingPipeline) pipeline).getUpdateNotifier();
-		} else if (pipeline instanceof CoreWorldRenderingPipeline) {
-			updateNotifier = ((CoreWorldRenderingPipeline) pipeline).getUpdateNotifier();
-		} else if (pipeline instanceof FixedFunctionWorldRenderingPipeline) {
-			// TODO: This isn't what we should do.
-			updateNotifier = new FrameUpdateNotifier();
-		} else {
-			// TODO: Proper interface
-			throw new IllegalStateException("Unsupported pipeline: " + pipeline);
-		}
-
-		CommonUniforms.addCommonUniforms(uniforms, programSet.getPack().getIdMap(), programSet.getPackDirectives(), updateNotifier, FogMode.LINEAR);
+		CommonUniforms.addCommonUniforms(uniforms, programSet.getPack().getIdMap(), programSet.getPackDirectives(), pipeline.getFrameUpdateNotifier(), FogMode.LINEAR);
 		BuiltinReplacementUniforms.addBuiltinReplacementUniforms(uniforms);
 
 		return uniforms.buildUniforms();
