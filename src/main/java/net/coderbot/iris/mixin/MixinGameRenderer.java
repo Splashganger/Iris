@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.GlUtil;
 import net.coderbot.iris.Iris;
 import net.coderbot.iris.gui.screen.HudHideable;
 import net.coderbot.iris.layer.GbufferPrograms;
+import net.coderbot.iris.pipeline.FixedFunctionWorldRenderingPipeline;
 import net.coderbot.iris.pipeline.HandRenderer;
 import net.coderbot.iris.pipeline.ShadowRenderer;
 import net.coderbot.iris.pipeline.WorldRenderingPipeline;
@@ -57,7 +58,7 @@ public class MixinGameRenderer {
 
 	@Redirect(method = "renderLevel", at = @At(value = "FIELD", target = "Lnet/minecraft/client/renderer/GameRenderer;renderHand:Z"))
 	private boolean disableVanillaHandRendering(GameRenderer gameRenderer) {
-		return !Iris.getCurrentPack().isPresent() && renderHand;
+		return Iris.getPipelineManager().getPipeline() instanceof FixedFunctionWorldRenderingPipeline && renderHand;
 	}
 
 	@Inject(method = "getPositionShader", at = @At("HEAD"), cancellable = true)
